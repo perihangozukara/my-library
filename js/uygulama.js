@@ -3,7 +3,7 @@
 import { db, yeniId, kaliciDepolamaIste } from './db.js';
 import { kitapBilgisi } from './pdf.js';
 import { rafOner, rafKelimeleri, HAZIR_KELIMELER, kucult } from './oneri.js';
-import { okuyucuAc, okuyucuKapat, okuyucuKitabi, yakinlastir, kalemKur, kalemSec, sayfayaGit, sonraki, onceki, KALEMLER, ETIKETLER } from './okuyucu.js';
+import { okuyucuAc, okuyucuKapat, okuyucuKitabi, yakinlastir, cizimPaneliAc, cizimPaneliKur, kalemKur, kalemSec, sayfayaGit, sonraki, onceki, KALEMLER, ETIKETLER } from './okuyucu.js';
 import * as ses from './ses.js';
 import { susElemani, isiklarElemani, susPaneliKur, susMenuAc, renkleriUygula, SUS_TURLERI } from './susleme.js';
 import { daktiloAc, daktiloKur } from './daktilo.js';
@@ -29,6 +29,7 @@ async function basla() {
   arayuzKur();
   kalemKur();
   daktiloKur();
+  cizimPaneliKur();
   sesPaneliKur();
   ses.dosyalariYokla().then(dogaSatirlariCiz);
   if (!raflar.length) kurulumAc();
@@ -145,7 +146,7 @@ function ciz() {
       if (!el) continue;
       const yuva = document.createElement('div');
       yuva.className = 'yuva';
-      if (!o.tur && o.sonSayfa > 1) {        // yarım kalan kitaba kurdele ayraç
+      if (!o.tur && (o.sonSayfa > 1 || o.yerImi)) {        // yarım kalan kitaba kurdele ayraç
         yuva.classList.add('okunuyor');
         yuva.style.setProperty('--kurdele', ['#8a2c2c', '#2c5a8a', '#3d6b3a', '#7a4a8a', '#b07a2a'][karma(o.id + 'k') % 5]);
       }
@@ -200,6 +201,7 @@ function karanlikIste() {
 function karanlikGuncelle() {
   const el = $('#karanlik');
   $('#isik-btn').setAttribute('aria-pressed', String(!!ayar.isiklarKapali));
+  document.body.classList.toggle('karanlik-oda', !!ayar.isiklarKapali); // okurken: yalnız sayfa görünür
   if (!ayar.isiklarKapali) { el.hidden = true; return; }
   el.hidden = false;
   el.style.background = `rgba(6,4,2,${ayar.tema === 'gece' ? 0.74 : 0.58})`;
@@ -541,10 +543,20 @@ async function kitapCikar(sirt) {
   const raf = raflar.find(x => x.id === kitap.rafId);
   $('#kapak-bilgi').textContent = `${kitap.sayfaSayisi} sayfa · ${raf ? raf.ad : ''}`;
   const devam = $('#devam-btn');
-  devam.hidden = !(kitap.sonSayfa > 1);
-  devam.textContent = `Kaldığın yerden devam (s. ${kitap.sonSayfa})`;
-  $('#bastan-btn').classList.toggle('birincil', !(kitap.sonSayfa > 1));
-  $('#bastan-btn').classList.toggle('hafif', kitap.sonSayfa > 1);
+  const yi = kitap.yerImi;
+  // İşaretten sonra en çok bir sayfa ilerlediyse "paragraftan devam"; daha ilerideyse iki seçenek.
+  const paragraftan = !!yi && Math.abs((kitap.sonSayfa || 1) - yi.sayfa) <= 1;
+  const devamVar = kitap.sonSayfa > 1 || !!yi;
+  devam.hidden = !devamVar;
+  devam.textContent = paragraftan ? `Kaldığın paragraftan devam (s. ${yi.sayfa})` : `Kaldığın yerden devam (s. ${kitap.sonSayfa})`;
+  devam.dataset.sayfa = paragraftan ? yi.sayfa : kitap.sonSayfa;
+  devam.dataset.parlat = paragraftan ? '1' : '';
+  $('#kapak-yerimi').hidden = !(yi && yi.metin);
+  $('#kapak-yerimi').textContent = yi && yi.metin ? `🔖 "${yi.metin}…"` : '';
+  $('#yerimi-git').hidden = !(yi && !paragraftan);
+  $('#yerimi-git').textContent = yi ? `🔖 İşaretli paragrafa git (s. ${yi.sayfa})` : '';
+  $('#bastan-btn').classList.toggle('birincil', !devamVar);
+  $('#bastan-btn').classList.toggle('hafif', devamVar);
   $('#kapak-raf').innerHTML = raflar.map(x => `<option value="${x.id}" ${x.id === kitap.rafId ? 'selected' : ''}>${kacis(x.ad)}</option>`).join('');
   panel.style.top = (T + H + 14) + 'px';
   panel.classList.add('gorunur');
@@ -575,8 +587,9 @@ async function rafaGeriKoy(okumayaGec) {
   if (!okumayaGec && a.sirt.isConnected) a.sirt.focus(); // odak kaybolmasın
 }
 
-async function oku(kitap, sayfa, defterdenMi = false) {
+async function oku(kitap, sayfa, defterdenMi = false, parlat = false) {
   await okuyucuAc(kitap, sayfa, {
+    parlat,
     sesAcik: () => ayar.sayfaSesi,
     sayfaDegisti: k => { const i = kitaplar.findIndex(x => x.id === k.id); if (i >= 0) kitaplar[i] = k; },
     kapaninca: k => {
@@ -786,13 +799,23 @@ function arayuzKur() {
     ciz();
     bildir(`"${a.kitap.ad}" kitaplıktan kaldırıldı.`);
   };
-  $('#isik-btn').onclick = () => { ayar.isiklarKapali = !ayar.isiklarKapali; ayarKaydet(); karanlikGuncelle(); if (ayar.isiklarKapali && !document.querySelector('#raflar .sus.yanik, #raflar .peri-isiklari.yanik')) bildir('Oda karanlık. Süsle ile bir fener, mum ya da abajur koy.'); };
+  $('#isik-btn').onclick = () => { ayar.isiklarKapali = !ayar.isiklarKapali; ayarKaydet(); karanlikGuncelle(); if (ayar.isiklarKapali && !document.body.classList.contains('okuyor') && !document.querySelector('#raflar .sus.yanik, #raflar .peri-isiklari.yanik')) bildir('Oda karanlık. Süsle ile bir fener, mum ya da abajur koy.'); };
   $('#susle-pencere').onchange = e => { ayar.pencere = e.target.checked; ayarKaydet(); pencereUygula(); };
   // süslerin ışığı yanınca/sönünce karanlık maskesi güncellensin
   new MutationObserver(karanlikIste).observe($('#raflar'), { attributes: true, attributeFilter: ['class'], subtree: true });
   $('#kapak-sahne').addEventListener('click', e => { if (e.target.id === 'kapak-sahne') rafaGeriKoy(false); });
   $('#bastan-btn').onclick = async () => { if (!acikKitap || !acikKitap.hazir) return; const k = acikKitap.kitap; await rafaGeriKoy(true); oku(k, 1); };
-  $('#devam-btn').onclick = async () => { if (!acikKitap || !acikKitap.hazir) return; const k = acikKitap.kitap; await rafaGeriKoy(true); oku(k, k.sonSayfa); };
+  $('#devam-btn').onclick = async e => {
+    if (!acikKitap || !acikKitap.hazir) return;
+    const k = acikKitap.kitap; const b = e.currentTarget;
+    const sayfa = +b.dataset.sayfa || k.sonSayfa; const parlat = !!b.dataset.parlat;
+    await rafaGeriKoy(true); oku(k, sayfa, false, parlat);
+  };
+  $('#yerimi-git').onclick = async () => {
+    if (!acikKitap || !acikKitap.hazir || !acikKitap.kitap.yerImi) return;
+    const k = acikKitap.kitap;
+    await rafaGeriKoy(true); oku(k, k.yerImi.sayfa, false, true);
+  };
   $('#kapak-raf').onchange = async e => {
     if (!acikKitap) return;
     const k = acikKitap.kitap;
@@ -809,6 +832,7 @@ function arayuzKur() {
   $('#ok-onceki').onclick = onceki;
   $('#ok-sonraki').onclick = sonraki;
   $('#ok-sayfa').onchange = e => sayfayaGit(+e.target.value);
+  $('#ok-cizim-btn').onclick = cizimPaneliAc;
   $('#ok-yakin').onclick = () => yakinlastir(1);
   $('#ok-uzak').onclick = () => yakinlastir(-1);
   $('#ok-zoom').onclick = () => yakinlastir(0);
@@ -823,6 +847,24 @@ function arayuzKur() {
 
   // defterim
   $('#defterim-btn').onclick = defterAc;
+
+  // Açılan paneller ekranın başka bir yerine dokununca kapansın
+  const sesPaneliKapat = () => { $('#ses-panel').hidden = true; $('#ses-panel-btn').setAttribute('aria-expanded', 'false'); };
+  document.addEventListener('pointerdown', e => {
+    const p = $('#ses-panel');
+    if (!p.hidden && !p.contains(e.target) && !e.target.closest('#ses-panel-btn')) sesPaneliKapat();
+  }, true);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#ses-panel').hidden) sesPaneliKapat(); });
+  // Pencereler (dialog): kutunun dışına (karartılmış alana) tıklayınca kapansın. İlk kurulum hariç.
+  $$('dialog').forEach(dl => {
+    if (dl.id === 'kurulum-dlg') return;
+    dl.addEventListener('click', e => {
+      if (e.target !== dl) return;
+      const r = dl.getBoundingClientRect();
+      const disarida = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      if (disarida) { dl.returnValue = ''; dl.close(); }
+    });
+  });
 
   // 2. sürüm: süsleme ve daktilo
   const susleAc = susPaneliKur({

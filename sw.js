@@ -1,5 +1,5 @@
 ﻿// KitaplÄ±ÄŸÄ±m Â· service worker: uygulamayÄ± internetsiz aÃ§ar. DÄ±ÅŸarÄ±ya istek gÃ¶ndermez.
-const SURUM = 'kitapligim-v6';
+const SURUM = 'kitapligim-v10';
 const KABUK = [
   './', 'index.html', 'manifest.webmanifest', 'css/stil.css',
   'js/uygulama.js', 'js/db.js', 'js/pdf.js', 'js/okuyucu.js', 'js/oneri.js', 'js/ses.js', 'js/susleme.js', 'js/daktilo.js',

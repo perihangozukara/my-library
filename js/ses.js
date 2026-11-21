@@ -103,6 +103,23 @@ function kagitTamponu() {
 }
 
 export function sayfaSesi() {
+  if (dosyaVar.sayfa) {
+    const c = baglam();
+    dosyaTamponu('sayfa').then(t => {
+      if (!t) { dosyaVar.sayfa = false; sayfaSesiKod(); return; }
+      const k = c.createBufferSource();
+      k.buffer = t;
+      k.playbackRate.value = 0.92 + Math.random() * 0.16; // her çevirişte biraz farklı
+      const g = c.createGain(); g.gain.value = 0.9;
+      k.connect(g).connect(ana);
+      k.start();
+    });
+    return;
+  }
+  sayfaSesiKod();
+}
+
+function sayfaSesiKod() {
   const c = baglam();
   const t = c.currentTime;
   const hiz = 0.85 + Math.random() * 0.3;
@@ -226,29 +243,68 @@ const uretecler = {
   },
 
   somine(cikis) {
-    const n = gurultu(true);
-    const lp = filtre('lowpass', 350);
-    const g = ctx.createGain(); g.gain.value = 0.8;
-    n.connect(lp).connect(g).connect(cikis);
-    n.start();
+    const durdurulacak = [];
+    // 1) Alev uğultusu: derin, düzensiz titreyen
+    const k = gurultu(true);
+    const lp = filtre('lowpass', 200, 0.7);
+    const ug = ctx.createGain(); ug.gain.value = 0.55;
+    k.connect(lp).connect(ug).connect(cikis);
+    k.start(); durdurulacak.push(k);
+    // 2) Alevin hışırtısı: çok hafif, yukarıda
+    const p = pembe();
+    const bp = filtre('bandpass', 2400, 0.6);
+    const hs = ctx.createGain(); hs.gain.value = 0.035;
+    p.connect(bp).connect(hs).connect(cikis);
+    p.start(); durdurulacak.push(p);
     let acik = true;
-    const citirti = () => {
+    // alev titremesi: uğultu ve hışırtı düzeyi rastgele dalgalanır
+    const titre = () => {
       if (!acik) return;
-      const adet = Math.random() < 0.3 ? 3 : 1;
-      for (let i = 0; i < adet; i++) {
-        const t = ctx.currentTime + i * 0.02 * Math.random();
-        const d = ctx.createBufferSource(); d.buffer = gurultuTampon;
-        const hp = filtre('highpass', 1500 + Math.random() * 3000);
-        const dg = ctx.createGain();
-        dg.gain.setValueAtTime(0.2 + Math.random() * 0.6, t);
-        dg.gain.exponentialRampToValueAtTime(0.0001, t + 0.01 + Math.random() * 0.04);
-        d.connect(hp).connect(dg).connect(cikis);
-        d.start(t, Math.random() * 3); d.stop(t + 0.06);
-      }
-      setTimeout(citirti, 60 + Math.random() * 500);
+      const t = ctx.currentTime, v = 0.35 + Math.random() * 0.4;
+      ug.gain.setTargetAtTime(v, t, 0.25);
+      hs.gain.setTargetAtTime(0.02 + Math.random() * 0.035, t, 0.2);
+      setTimeout(titre, 250 + Math.random() * 700);
     };
-    citirti();
-    return () => { acik = false; n.stop(); };
+    titre();
+    // 3) Çıtırtılar: çoğu küçük, arada büyük (gerçek ateşteki dağılım)
+    const citir = (zaman, buyukluk) => {
+      const d = ctx.createBufferSource(); d.buffer = gurultuTampon;
+      const f = filtre('bandpass', 1200 + Math.random() * 5000, 2 + Math.random() * 8);
+      const g = ctx.createGain();
+      const sure = 0.003 + Math.random() * 0.012 * buyukluk;
+      g.gain.setValueAtTime(0.0001, zaman);
+      g.gain.exponentialRampToValueAtTime(Math.min(0.9, 0.08 + buyukluk * 0.35), zaman + 0.001);
+      g.gain.exponentialRampToValueAtTime(0.0001, zaman + sure);
+      d.connect(f).connect(g);
+      yanaKoy(g, cikis, Math.random() * 0.8 - 0.4);
+      d.start(zaman, Math.random() * 3); d.stop(zaman + sure + 0.01);
+    };
+    // 4) Odun çatlaması: daha dolgun, kısa bir "çat"
+    const cat = zaman => {
+      const d = ctx.createBufferSource(); d.buffer = gurultuTampon;
+      const f = filtre('bandpass', 500 + Math.random() * 500, 1.2);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, zaman);
+      g.gain.exponentialRampToValueAtTime(0.5, zaman + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, zaman + 0.07);
+      d.connect(f).connect(g);
+      yanaKoy(g, cikis, Math.random() * 0.6 - 0.3);
+      d.start(zaman, Math.random() * 3); d.stop(zaman + 0.09);
+      for (let i = 0; i < 4; i++) citir(zaman + 0.005 + Math.random() * 0.06, Math.random());
+    };
+    const dongu = () => {
+      if (!acik) return;
+      const t = ctx.currentTime + 0.02;
+      const r = Math.random();
+      if (r < 0.04) cat(t);
+      else {
+        const adet = r < 0.25 ? 2 + Math.floor(Math.random() * 4) : 1;   // bazen art arda
+        for (let i = 0; i < adet; i++) citir(t + i * (0.008 + Math.random() * 0.03), Math.pow(Math.random(), 3));
+      }
+      setTimeout(dongu, 25 + Math.pow(Math.random(), 2) * 450);
+    };
+    dongu();
+    return () => { acik = false; durdurulacak.forEach(x => x.stop()); };
   },
 
   kus(cikis) {
@@ -291,10 +347,20 @@ export const DOGA = [
 ];
 
 const doga = {}; // ad -> { kazanc, durdur, audio }
+const tamponlar = {}; // ad -> Promise<AudioBuffer|null>  (sesler/<ad>.mp3)
+function dosyaTamponu(ad) {
+  if (!tamponlar[ad]) {
+    tamponlar[ad] = fetch(`sesler/${ad}.mp3`)
+      .then(y => (y.ok ? y.arrayBuffer() : null))
+      .then(v => (v ? baglam().decodeAudioData(v) : null))
+      .catch(() => null);
+  }
+  return tamponlar[ad];
+}
 const dosyaVar = {}; // ad -> bool (sesler/<ad>.mp3 var mı)
 
 export async function dosyalariYokla() {
-  await Promise.all(DOGA.map(async d => {
+  await Promise.all([...DOGA, { ad: 'sayfa' }].map(async d => {
     try {
       const r = await fetch(`sesler/${d.ad}.mp3`, { method: 'HEAD' });
       dosyaVar[d.ad] = r.ok;
@@ -311,12 +377,17 @@ export function dogaAc(ad, duzey) {
   kazanc.gain.value = duzey;
   kazanc.connect(ana);
   if (dosyaVar[ad]) {
-    const a = new Audio(`sesler/${ad}.mp3`);
-    a.loop = true;
-    const kaynak = ctx.createMediaElementSource(a);
-    kaynak.connect(kazanc);
-    a.play();
-    doga[ad] = { kazanc, durdur: () => { a.pause(); a.src = ''; } };
+    // Gerçek kayıt: dikişsiz döngü. Dosya açılamazsa kodla üretilen sese düşer.
+    let kaynak = null, durdu = false, kodDur = null;
+    doga[ad] = { kazanc, durdur: () => { durdu = true; if (kaynak) kaynak.stop(); if (kodDur) kodDur(); } };
+    dosyaTamponu(ad).then(t => {
+      if (durdu) return;
+      if (!t) { kodDur = uretecler[ad](kazanc); return; }
+      kaynak = ctx.createBufferSource();
+      kaynak.buffer = t; kaynak.loop = true;
+      kaynak.connect(kazanc);
+      kaynak.start(0, Math.random() * Math.max(0, t.duration - 1)); // her açılışta farklı yerden
+    });
   } else {
     doga[ad] = { kazanc, durdur: uretecler[ad](kazanc) };
   }

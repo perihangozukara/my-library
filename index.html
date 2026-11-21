@@ -68,6 +68,8 @@
       <button class="btn birincil" id="bastan-btn">Baştan oku</button>
       <button class="btn birincil" id="devam-btn" hidden></button>
     </div>
+    <p id="kapak-yerimi" class="kucuk" hidden></p>
+    <button class="btn hafif" id="yerimi-git" hidden></button>
     <button class="btn" id="kapak-daktilo">⌨ Daktilo notu</button>
     <label class="kucuk">Raf: <select id="kapak-raf"></select></label>
     <button class="btn hafif" id="kapak-kapat">Rafa geri koy</button>
@@ -82,12 +84,14 @@
     <span id="ok-baslik"></span>
     <div id="ok-kalemler" role="group" aria-label="Kalemler">
       <button class="kalem-btn secili" data-kalem="" title="Kalem kapalı (sayfa çevir)">✋</button>
+      <button class="kalem-btn yerimi-btn" data-kalem="yerimi" title="Kaldığım paragrafı işaretle: bas, sonra satıra dokun">🔖</button>
     </div>
     <div id="ok-zoom-grup" role="group" aria-label="Yakınlaştırma">
       <button class="btn ikon" id="ok-uzak" title="Uzaklaştır (Ctrl + fare tekerleği)">−</button>
       <button class="btn ikon" id="ok-zoom" title="Ekrana sığdır">100%</button>
       <button class="btn ikon" id="ok-yakin" title="Yakınlaştır (Ctrl + fare tekerleği)">+</button>
     </div>
+    <button class="btn ikon" id="ok-cizim-btn" title="Bu kitapta işaretlediğin cümleler">📑</button>
     <button class="btn ikon" id="ok-daktilo" title="Bu kitabın daktilo notu">⌨</button>
     <div id="ok-gezinti">
       <button class="btn ikon" id="ok-onceki" title="Önceki sayfa">‹</button>
@@ -95,6 +99,10 @@
       <button class="btn ikon" id="ok-sonraki" title="Sonraki sayfa">›</button>
     </div>
   </div>
+  <aside id="ok-cizimler" hidden aria-label="Bu kitaptaki çizimlerin">
+    <div class="oc-ust"><b>📑 İşaretlediklerim <span id="ok-cizimler-sayi"></span></b><button class="btn ikon" id="ok-cizimler-kapat" aria-label="Kapat">×</button></div>
+    <ul></ul>
+  </aside>
   <div id="ok-sahne">
     <div id="ok-kalem-katman" hidden></div>
     <p id="ok-yukleniyor">Kitap açılıyor…</p>

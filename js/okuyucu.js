@@ -63,6 +63,7 @@ export async function okuyucuAc(kitap, baslangic, sec = {}) {
     kuyruk: Promise.resolve(),
     kaydetZaman: null,
     zoom: 1,
+    parlat: !!sec.parlat, // paragraf işareti açılışta parlasın
   };
 
   const sahne = $('#ok-sahne');
@@ -78,7 +79,8 @@ export async function okuyucuAc(kitap, baslangic, sec = {}) {
     s.className = 'sayfa';
     s.dataset.no = i;
     if (i === 1 || i === N) s.dataset.density = 'hard';
-    s.innerHTML = `<div class="sayfa-ic"></div><div class="vurgu-katman"></div><div class="sayfa-alt">${i}</div>`;
+    s.classList.add(i % 2 === 0 ? 'sol-sayfa' : 'sag-sayfa'); // kapak tek başına sağda: çift sayfalar solda
+    s.innerHTML = `<div class="sayfa-ic"></div><div class="sayfa-bombe"></div><div class="vurgu-katman"></div><div class="sayfa-alt">${i}</div>`;
     sayfalar.push(s);
     kitapEl.appendChild(s);
   }
@@ -109,11 +111,12 @@ export async function okuyucuAc(kitap, baslangic, sec = {}) {
     gostergeGuncelle();
     gorunurleriCiz();
     sayfaKaydet(e.data + 1);
+    govdeGuncelle();
   });
   pf.on('changeState', e => {
     if (e.data === 'flipping' && (!d.sec.sesAcik || d.sec.sesAcik())) sayfaSesi();
   });
-  pf.on('changeOrientation', () => { d.cizilen.clear(); gorunurleriCiz(); });
+  pf.on('changeOrientation', () => { d.cizilen.clear(); gorunurleriCiz(); govdeGuncelle(); });
 
   $('#ok-yukleniyor').hidden = true;
   gostergeGuncelle();
@@ -131,6 +134,157 @@ function yenidenBoyutla() {
   if (!d) return;
   clearTimeout(boyutZaman);
   boyutZaman = setTimeout(() => { if (d) zoomUygula(); }, 250);
+}
+
+// ---------- Gerçek kitap görünümü: sert kapak ve sayfa yığını ----------
+function govdeGuncelle() {
+  if (!d) return;
+  const blok = $('#ok-kitap .stf__block');
+  if (!blok) return;
+  let g = blok.querySelector('.kitap-govde');
+  if (!g) {
+    g = document.createElement('div');
+    g.className = 'kitap-govde';
+    g.innerHTML = '<div class="cilt"></div><div class="yigin sol"></div><div class="yigin sag"></div>';
+    blok.prepend(g);
+    const renk = d.kitap.renk ? `rgb(${d.kitap.renk.map(x => Math.round(x * 0.55)).join(',')})` : '#5a2f24';
+    g.style.setProperty('--cilt', renk);
+  }
+  const b = d.pf.getBoundsRect();
+  const tek = d.pf.getOrientation() === 'portrait';
+  const i = d.pf.getCurrentPageIndex();
+  const N = d.N;
+  const kapakta = !tek && i === 0;                         // kapak tek başına sağda
+  const sondaTek = !tek && i >= N - 1 && N % 2 === 0;     // arka kapak tek başına solda
+  let x = b.left, w = b.width;
+  if (tek || kapakta) { x = b.left + b.pageWidth; w = b.pageWidth; }
+  else if (sondaTek) { w = b.pageWidth; }
+  const okunan = N > 1 ? i / (N - 1) : 0;
+  const enCok = Math.min(14, 3 + N / 30);                  // kalın kitapta yığın daha kalın
+  const sol = tek || kapakta ? 0 : Math.max(1, okunan * enCok);
+  const sag = sondaTek ? 0 : Math.max(1, (1 - okunan) * enCok);
+  g.style.cssText += `;left:${x - sol}px;top:${b.top}px;width:${w + sol + sag}px;height:${b.height}px`;
+  g.style.setProperty('--sol', sol + 'px');
+  g.style.setProperty('--sag', sag + 'px');
+  g.classList.toggle('tek', tek || kapakta || sondaTek);
+  $('#ok-kitap').classList.toggle('tek-sayfa', tek);
+}
+
+// ---------- Kaldığın paragraf işareti ----------
+// Dokunulan satırın ait olduğu paragrafın başını bulur.
+function paragrafBasi(p, nokta) {
+  if (!p.length) return null;
+  const sat = new Map();
+  for (const it of p) {
+    let s = sat.get(it.satir);
+    if (!s) sat.set(it.satir, s = { satir: it.satir, x: it.x, y: it.y, h: it.h, son: it.x + it.w, metin: '' });
+    s.x = Math.min(s.x, it.x); s.y = Math.min(s.y, it.y); s.h = Math.max(s.h, it.h);
+    s.son = Math.max(s.son, it.x + it.w);
+    s.metin += (s.metin && !/\s$/.test(s.metin) ? ' ' : '') + it.str;
+  }
+  const L = [...sat.values()].sort((a, b) => a.satir - b.satir);
+  const sutun = s => (s.satir >= 100000 ? 1 : 0);
+  let i = 0, en = Infinity;
+  L.forEach((s, k) => {
+    const dy = nokta.y < s.y ? s.y - nokta.y : nokta.y > s.y + s.h ? nokta.y - s.y - s.h : 0;
+    const dx = nokta.x < s.x ? s.x - nokta.x : nokta.x > s.son ? nokta.x - s.son : 0;
+    const puan = dy * 4 + dx;
+    if (puan < en) { en = puan; i = k; }
+  });
+  const ayni = L.filter(s => sutun(s) === sutun(L[i]));
+  const araliklar = [];
+  for (let k = 1; k < ayni.length; k++) { const a = ayni[k].y - ayni[k - 1].y; if (a > 0) araliklar.push(a); }
+  araliklar.sort((a, b) => a - b);
+  const tipik = araliklar.length ? araliklar[Math.floor(araliklar.length / 2)] : 0.03;
+  const xler = ayni.map(s => s.x).sort((a, b) => a - b);
+  const solKenar = xler[Math.floor(xler.length * 0.2)] ?? 0;
+  const sonlar = ayni.map(s => s.son).sort((a, b) => a - b);
+  const sagKenar = sonlar[Math.floor(sonlar.length * 0.8)] ?? 1;
+  while (i > 0) {
+    const a = L[i - 1], b = L[i];
+    if (sutun(a) !== sutun(b)) break;
+    const bosluk = b.y - a.y;
+    const girinti = b.x - solKenar > 0.015;
+    const oncekiKisa = a.son < sagKenar - 0.08;
+    if (bosluk > tipik * 1.45 || girinti || oncekiKisa) break;
+    i--;
+  }
+  return L[i];
+}
+
+async function yerImiKoy(sayfaEl, no, nokta) {
+  const p = await metinAl(no);
+  const s = paragrafBasi(p, nokta);
+  const yer = s
+    ? { sayfa: no, x: s.x, y: s.y, h: s.h, son: s.son, metin: s.metin.replace(/\s+/g, ' ').trim().slice(0, 70), tarih: Date.now() }
+    : { sayfa: no, x: 0.06, y: Math.max(0, nokta.y - 0.012), h: 0.024, son: 0.94, metin: '', tarih: Date.now() }; // metinsiz sayfa
+  const k = await db.al('kitaplar', d.kitap.id);
+  if (!k) return;
+  const eski = d.kitap.yerImi;
+  k.yerImi = yer; k.sonSayfa = no; k.sonOkuma = Date.now();
+  await db.koy('kitaplar', k);
+  d.kitap.yerImi = yer; d.kitap.sonSayfa = no;
+  if (eski && eski.sayfa !== no) vurgulariGoster(eski.sayfa);
+  vurgulariGoster(no);
+  kalemSec(null);
+  ipucu(yer.metin ? `🔖 Kaldığın paragraf işaretlendi: "${yer.metin.slice(0, 40)}…"` : '🔖 Kaldığın yer işaretlendi.');
+  d.sec.sayfaDegisti && d.sec.sayfaDegisti(k);
+}
+
+function yerImiGoster(n) {
+  const katman = d.sayfalar[n - 1].querySelector('.vurgu-katman');
+  katman.querySelectorAll('.yer-imi-isaret, .yer-imi-bant').forEach(x => x.remove());
+  const y = d.kitap.yerImi;
+  if (!y || y.sayfa !== n) return;
+  const bant = document.createElement('div');
+  bant.className = 'yer-imi-bant';
+  bant.style.cssText = `left:${Math.max(0, y.x - 0.01) * 100}%;top:${(y.y - 0.004) * 100}%;width:${Math.min(1, y.son - y.x + 0.02) * 100}%;height:${(y.h + 0.008) * 100}%`;
+  const isaret = document.createElement('div');
+  isaret.className = 'yer-imi-isaret';
+  isaret.title = 'Kaldığın paragraf';
+  isaret.style.cssText = `left:${Math.max(0.005, y.x - 0.045) * 100}%;top:${(y.y - 0.012) * 100}%`;
+  katman.append(bant, isaret);
+  if (d.parlat) { d.parlat = false; bant.classList.add('parla'); isaret.classList.add('parla'); }
+}
+
+// ---------- Bu kitapta işaretlediğin cümleler (okurken yan panel) ----------
+const kacisH = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export function cizimPaneliAc() {
+  if (!d) return;
+  const p = $('#ok-cizimler');
+  p.style.top = $('#ok-ust').offsetHeight + 'px'; // telefonda üst çubuk daha yüksek
+  p.hidden = !p.hidden;
+  if (!p.hidden) cizimPaneliCiz();
+}
+function cizimPaneliCiz() {
+  const p = $('#ok-cizimler');
+  if (!d || p.hidden) return;
+  const liste = [...d.cizimler].sort((a, b) => a.sayfa - b.sayfa || (a.rects[0]?.y ?? 0) - (b.rects[0]?.y ?? 0));
+  const yi = d.kitap.yerImi;
+  $('#ok-cizimler-sayi').textContent = liste.length ? `(${liste.length})` : '';
+  $('#ok-cizimler ul').innerHTML =
+    (yi ? `<li class="oc-yerimi" data-sayfa="${yi.sayfa}" data-yerimi="1"><span class="oc-serit"></span><div><q>${kacisH(yi.metin || 'Kaldığın yer')}</q><small>🔖 Kaldığın paragraf · s. ${yi.sayfa}</small></div></li>` : '') +
+    (liste.length ? liste.map(c => `<li data-sayfa="${c.sayfa}" data-id="${c.id}"><span class="oc-serit" style="background:${renkKodu(c.renk)}"></span><div><q>${c.metin ? kacisH(c.metin) : '<i>Metin yakalanamadı</i>'}</q><small>s. ${c.sayfa}${c.etiket ? ' · ' + kacisH(c.etiket) : ''}</small></div></li>`).join('')
+      : '<li class="oc-bos">Bu kitapta henüz çizim yok. Renkli kalemlerden birini seç ve cümlenin üstünden geç.</li>');
+}
+export function cizimPaneliKur() {
+  const p = $('#ok-cizimler');
+  p.addEventListener('click', e => {
+    if (e.target.closest('#ok-cizimler-kapat')) { p.hidden = true; return; }
+    const li = e.target.closest('li[data-sayfa]');
+    if (!li || !d) return;
+    const no = +li.dataset.sayfa;
+    if (li.dataset.yerimi) d.parlat = true; else d.parlaCizim = li.dataset.id;
+    sayfayaGit(no);
+    vurgulariGoster(no);
+    setTimeout(() => { if (d) d.parlaCizim = null; }, 50);
+    if (innerWidth < 700) p.hidden = true; // telefonda sayfayı görmek için panel kapansın
+  });
+  // dışarı dokununca kapansın
+  document.addEventListener('pointerdown', e => {
+    if (p.hidden || p.contains(e.target) || e.target.closest('#ok-cizim-btn')) return;
+    p.hidden = true;
+  }, true);
 }
 
 // ---------- Yakınlaştırma ----------
@@ -162,6 +316,7 @@ function zoomUygula() {
     d.pf.update();
   }
   zoomGoster();
+  govdeGuncelle();
   d.cizilen.clear();
   gorunurleriCiz();
 }
@@ -280,8 +435,13 @@ function vurgulariGoster(n) {
   const katman = d.sayfalar[n - 1].querySelector('.vurgu-katman');
   katman.querySelectorAll('.vurgu:not(.onizleme)').forEach(x => x.remove());
   for (const c of d.cizimler.filter(c => c.sayfa === n)) {
-    for (const r of c.rects) katman.appendChild(vurguDiv(r, c.renk));
+    for (const r of c.rects) {
+      const v = vurguDiv(r, c.renk);
+      if (d.parlaCizim === c.id) v.classList.add('parla');
+      katman.appendChild(v);
+    }
   }
+  yerImiGoster(n);
 }
 
 function vurguDiv(r, renk, onizleme = false) {
@@ -343,6 +503,72 @@ export function kalemKur() {
     }, 90);
   }, true);
 
+  // ---------- Parmakla büyütme (iki parmak) ve büyütülmüşken tek parmakla gezinme ----------
+  const parmaklar = new Map();
+  let tutam = null;   // iki parmak hareketi
+  let kaydir = null;  // büyütülmüşken tek parmakla gezinme
+  const uzaklik = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  sahne.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || !d || d.kalem) return;
+    parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (parmaklar.size === 2) {
+      const [a, b] = [...parmaklar.values()];
+      const kitapEl = $('#ok-kitap');
+      const kr = kitapEl.getBoundingClientRect();
+      kitapEl.style.transformOrigin = `${(a.x + b.x) / 2 - kr.left}px ${(a.y + b.y) / 2 - kr.top}px`;
+      tutam = { bas: Math.max(20, uzaklik(a, b)), zoom: d.zoom, hedef: d.zoom };
+      kaydir = null; dokun = null;
+    } else if (parmaklar.size === 1 && d.zoom > 1) {
+      kaydir = { x: e.clientX, y: e.clientY };
+    }
+  }, true);
+  sahne.addEventListener('pointermove', e => {
+    if (!parmaklar.has(e.pointerId) || !d) return;
+    parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (tutam && parmaklar.size >= 2) {
+      const [a, b] = [...parmaklar.values()];
+      tutam.hedef = Math.max(1, Math.min(3, tutam.zoom * uzaklik(a, b) / tutam.bas));
+      $('#ok-kitap').style.transform = `scale(${tutam.hedef / tutam.zoom})`; // canlı önizleme
+    } else if (kaydir) {
+      sahne.scrollLeft -= e.clientX - kaydir.x;
+      sahne.scrollTop -= e.clientY - kaydir.y;
+      kaydir = { x: e.clientX, y: e.clientY };
+      if (dokun && Math.hypot(e.clientX - dokun.x, e.clientY - dokun.y) > 12) dokun = null;
+    }
+  }, true);
+  const parmakBitti = e => {
+    if (!parmaklar.delete(e.pointerId)) return;
+    if (tutam && parmaklar.size < 2) {
+      const t = tutam; tutam = null; kaydir = null;
+      const kitapEl = $('#ok-kitap');
+      kitapEl.style.transform = ''; kitapEl.style.transformOrigin = '';
+      if (!d) return;
+      // en yakın büyütme adımına otur, parmakların ortası yerinde kalsın
+      const enYakin = ZOOMLAR.reduce((m, z) => Math.abs(z - t.hedef) < Math.abs(m - t.hedef) ? z : m, ZOOMLAR[0]);
+      if (enYakin !== d.zoom) {
+        const cx = (sahne.scrollLeft + sahne.clientWidth / 2) / Math.max(1, sahne.scrollWidth);
+        const cy = (sahne.scrollTop + sahne.clientHeight / 2) / Math.max(1, sahne.scrollHeight);
+        d.zoom = enYakin;
+        zoomUygula();
+        sahne.scrollLeft = cx * sahne.scrollWidth - sahne.clientWidth / 2;
+        sahne.scrollTop = cy * sahne.scrollHeight - sahne.clientHeight / 2;
+      }
+    }
+    if (!parmaklar.size) kaydir = null;
+  };
+  sahne.addEventListener('pointerup', parmakBitti, true);
+  sahne.addEventListener('pointercancel', parmakBitti, true);
+  // İki parmak varken ya da büyütülmüşken StPageFlip dokunmayı sayfa çevirme sanmasın;
+  // tarayıcının kendi sayfa büyütmesi de devreye girmesin.
+  const dokunmaEngeli = e => {
+    if (!d || d.kalem || !e.target.closest || !e.target.closest('#ok-sahne')) return;
+    if (e.touches.length >= 2 || tutam || d.zoom > 1) {
+      e.stopPropagation();
+      if (e.type === 'touchmove' && e.cancelable) e.preventDefault();
+    }
+  };
+  ['touchstart', 'touchmove', 'touchend'].forEach(t => window.addEventListener(t, dokunmaEngeli, { capture: true, passive: false }));
+
   const sayfaBul = (x, y) => {
     katman.style.pointerEvents = 'none';
     const el = document.elementFromPoint(x, y);
@@ -364,6 +590,7 @@ export function kalemKur() {
     e.preventDefault();
     katman.setPointerCapture(e.pointerId);
     const no = +sayfaEl.dataset.no;
+    if (d.kalem === 'yerimi') { await yerImiKoy(sayfaEl, no, oranla(sayfaEl, e.clientX, e.clientY)); return; }
     cizim = { sayfaEl, no, bas: oranla(sayfaEl, e.clientX, e.clientY), parcalar: null, secim: null };
     cizim.son = cizim.bas;
     cizim.parcalar = await metinAl(no);
@@ -400,6 +627,7 @@ export function kalemKur() {
     await db.koy('cizimler', kayit);
     d.cizimler.push(kayit);
     vurgulariGoster(c.no);
+    cizimPaneliCiz();
     etiketSor(kayit, e.clientX, e.clientY);
     d.sec.cizimEklendi && d.sec.cizimEklendi(kayit);
   };
@@ -509,6 +737,7 @@ export async function okuyucuKapat() {
   d = null;
   engelAyarla(false);
   $('#ok-sahne').appendChild($('#ok-kalem-katman'));
+  $('#ok-cizimler').hidden = true;
   try { durum.pf.destroy(); } catch (_) {}
   const el = $('#ok-kitap'); if (el) el.remove();
   durum.pdf.loadingTask.destroy();
