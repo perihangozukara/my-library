@@ -71,7 +71,12 @@
     <p id="kapak-yerimi" class="kucuk" hidden></p>
     <button class="btn hafif" id="yerimi-git" hidden></button>
     <button class="btn" id="kapak-daktilo">⌨ Daktilo notu</button>
-    <label class="kucuk">Raf: <select id="kapak-raf"></select></label>
+    <div class="kapak-yer">
+      <label class="kucuk">Raf: <select id="kapak-raf"></select></label>
+      <span class="kucuk">Sırası:</span>
+      <button class="btn ikon" id="kapak-sola" title="Rafta bir sola taşı" aria-label="Rafta bir sola taşı">◀</button>
+      <button class="btn ikon" id="kapak-saga" title="Rafta bir sağa taşı" aria-label="Rafta bir sağa taşı">▶</button>
+    </div>
     <button class="btn hafif" id="kapak-kapat">Rafa geri koy</button>
     <button class="btn hafif tehlike" id="kapak-kaldir">Kitaplıktan kaldır</button>
   </div>

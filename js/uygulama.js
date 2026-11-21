@@ -302,13 +302,21 @@ function yedekKur() {
 // ---------- Sürükle-bırak (fare ve dokunma) ----------
 let surukleme = null;
 function sirtSuruklemeKur(el) {
+  // Fare ve kalem kalemi (stylus): pointer olayları. Parmak: aşağıdaki touch olayları.
   el.addEventListener('pointerdown', e => {
-    if (e.button !== 0) return;
-    const dokunma = e.pointerType !== 'mouse';
-    const s = { el, x: e.clientX, y: e.clientY, basladi: false, iptal: false, id: e.pointerId, dokunma };
+    if (e.button !== 0 || e.pointerType === 'touch') return;
+    const s = { el, x: e.clientX, y: e.clientY, basladi: false, iptal: false, id: e.pointerId, dokunma: e.pointerType !== 'mouse' };
     surukleme = s;
-    if (dokunma) s.zaman = setTimeout(() => { if (surukleme === s && !s.iptal) suruklemeBaslat(s, s.x, s.y); }, 320);
+    if (s.dokunma) s.zaman = setTimeout(() => { if (surukleme === s && !s.iptal) suruklemeBaslat(s, s.x, s.y); }, 320);
   });
+  // Parmakla: uzun bas (0,3 sn) → kitap kalkar → her yöne serbestçe taşı. Kısa dokunuş açar.
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const s = { el, x: t.clientX, y: t.clientY, basladi: false, iptal: false, id: 'parmak', dokunma: true, sonX: t.clientX, sonY: t.clientY };
+    surukleme = s;
+    s.zaman = setTimeout(() => { if (surukleme === s && !s.iptal) suruklemeBaslat(s, s.sonX, s.sonY); }, 300);
+  }, { passive: true });
 }
 
 function suruklemeBaslat(s, x, y) {
@@ -362,6 +370,61 @@ function sonrakiId(sirt) {
   return null;
 }
 
+// Ortak: sürüklerken hareket, kenarda kendiliğinden kaydırma, bırakma, iptal
+function suruklemeHareket(s, x, y) {
+  s.sonX = x; s.sonY = y;
+  s.hayalet.style.left = (x - s.dx) + 'px';
+  s.hayalet.style.top = (y - s.dy) + 'px';
+  const h = hedefBul(x, y);
+  $$('.raf-ic.hedef').forEach(r => r !== (h && h.ic) && r.classList.remove('hedef'));
+  if (h) h.ic.classList.add('hedef');
+  s.hedef = h;
+  kenarKaydirBaslat(s);
+}
+// Parmak ekranın üst/alt kenarına yakınsa (hareket etmese de) sayfa kayar
+function kenarKaydirBaslat(s) {
+  if (s.kaydirKare) return;
+  const adim = () => {
+    if (surukleme !== s || !s.basladi) { s.kaydirKare = 0; return; }
+    const ustSinir = 110, altSinir = innerHeight - 130;
+    let hiz = 0;
+    if (s.sonY < ustSinir) hiz = -Math.ceil((ustSinir - s.sonY) / 8);
+    else if (s.sonY > altSinir) hiz = Math.ceil((s.sonY - altSinir) / 8);
+    if (hiz) {
+      window.scrollBy(0, hiz);
+      const h = hedefBul(s.sonX, s.sonY);
+      $$('.raf-ic.hedef').forEach(r => r !== (h && h.ic) && r.classList.remove('hedef'));
+      if (h) h.ic.classList.add('hedef');
+      s.hedef = h;
+    }
+    s.kaydirKare = requestAnimationFrame(adim);
+  };
+  s.kaydirKare = requestAnimationFrame(adim);
+}
+async function suruklemeBitir(s) {
+  surukleme = null;
+  clearTimeout(s.zaman);
+  if (s.kaydirKare) cancelAnimationFrame(s.kaydirKare);
+  if (!s.basladi) {
+    if (!s.iptal) ogeTikla(s.el); // kısa dokunuş/tıklama: kitabı aç ya da süs menüsü
+    return;
+  }
+  s.hayalet.remove();
+  s.el.classList.remove('surukleniyor');
+  $$('.raf-ic.hedef').forEach(x => x.classList.remove('hedef'));
+  if (s.hedef) await ogeTasi(s.el.dataset.tur, s.el.dataset.id, s.hedef.rafId, s.hedef.once);
+}
+function suruklemeIptal() {
+  const s = surukleme; surukleme = null;
+  if (!s) return;
+  clearTimeout(s.zaman);
+  if (s.kaydirKare) cancelAnimationFrame(s.kaydirKare);
+  if (s.hayalet) s.hayalet.remove();
+  s.el.classList.remove('surukleniyor');
+  $$('.raf-ic.hedef').forEach(x => x.classList.remove('hedef'));
+}
+
+// Fare / kalem
 document.addEventListener('pointermove', e => {
   const s = surukleme;
   if (!s || e.pointerId !== s.id) return;
@@ -370,34 +433,41 @@ document.addEventListener('pointermove', e => {
     if (s.dokunma) { if (uzak > 10) { s.iptal = true; clearTimeout(s.zaman); } return; }
     if (uzak > 6) suruklemeBaslat(s, s.x, s.y); else return;
   }
-  s.hayalet.style.left = (e.clientX - s.dx) + 'px';
-  s.hayalet.style.top = (e.clientY - s.dy) + 'px';
-  const h = hedefBul(e.clientX, e.clientY);
-  $$('.raf-ic.hedef').forEach(x => x !== (h && h.ic) && x.classList.remove('hedef'));
-  if (h) h.ic.classList.add('hedef');
-  s.hedef = h;
-  // kenara yaklaşınca sayfayı kaydır
-  if (e.clientY < 90) window.scrollBy(0, -12); else if (e.clientY > innerHeight - 110) window.scrollBy(0, 12);
+  suruklemeHareket(s, e.clientX, e.clientY);
 });
-document.addEventListener('touchmove', e => { if (surukleme && surukleme.basladi) e.preventDefault(); }, { passive: false });
-
-document.addEventListener('pointerup', async e => {
+document.addEventListener('pointerup', e => {
   const s = surukleme;
   if (!s || e.pointerId !== s.id) return;
-  surukleme = null;
-  clearTimeout(s.zaman);
+  suruklemeBitir(s);
+});
+document.addEventListener('pointercancel', e => {
+  const s = surukleme;
+  if (s && s.id === e.pointerId) suruklemeIptal();
+});
+
+// Parmak
+document.addEventListener('touchmove', e => {
+  const s = surukleme;
+  if (!s || s.id !== 'parmak') return;
+  const t = e.touches[0];
   if (!s.basladi) {
-    if (!s.iptal) ogeTikla(s.el); // tıklama: kitabı raftan çıkar ya da süs menüsünü aç
+    // kitap kalkmadan kaydırırsa: sayfa kaysın, sürükleme olmasın
+    if (Math.hypot(t.clientX - s.x, t.clientY - s.y) > 10) { s.iptal = true; clearTimeout(s.zaman); }
+    s.sonX = t.clientX; s.sonY = t.clientY;
     return;
   }
-  s.hayalet.remove();
-  s.el.classList.remove('surukleniyor');
-  $$('.raf-ic.hedef').forEach(x => x.classList.remove('hedef'));
-  if (s.hedef) await ogeTasi(s.el.dataset.tur, s.el.dataset.id, s.hedef.rafId, s.hedef.once);
-});
-document.addEventListener('pointercancel', () => {
-  const s = surukleme; surukleme = null;
-  if (s) { clearTimeout(s.zaman); if (s.hayalet) s.hayalet.remove(); s.el.classList.remove('surukleniyor'); }
+  if (e.cancelable) e.preventDefault(); // kitap kalktıktan sonra sayfa kaymasın
+  suruklemeHareket(s, t.clientX, t.clientY);
+}, { passive: false });
+document.addEventListener('touchend', e => {
+  const s = surukleme;
+  if (!s || s.id !== 'parmak') return;
+  if (s.basladi || !s.iptal) e.preventDefault(); // ardından gelen sahte tıklamayı engelle
+  suruklemeBitir(s);
+}, { passive: false });
+document.addEventListener('touchcancel', () => {
+  const s = surukleme;
+  if (s && s.id === 'parmak') suruklemeIptal();
 });
 
 function kitapTasi(kitapId, rafId, onceId) { return ogeTasi('kitap', kitapId, rafId, onceId); }
@@ -875,6 +945,22 @@ function arayuzKur() {
     acikKitap.sirt.classList.add('cikti');
     $('#kapak-bilgi').textContent = `${k.sayfaSayisi} sayfa · ${raflar.find(x => x.id === k.rafId).ad}`;
   };
+  // Kapak panelinden rafta sırasını değiştir (sürüklemeden)
+  const siraDegistir = async yon => {
+    if (!acikKitap || !acikKitap.hazir) return;
+    const k = acikKitap.kitap;
+    const sira = [...kitaplar, ...susler].filter(x => x.rafId === k.rafId && (!x.tur || SUS_TURLERI[x.tur] && !SUS_TURLERI[x.tur].rafUstu))
+      .sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+    const i = sira.findIndex(x => x.id === k.id);
+    if (yon < 0 && i <= 0) { bildir('Kitap zaten rafın en solunda.'); return; }
+    if (yon > 0 && i >= sira.length - 1) { bildir('Kitap zaten rafın en sağında.'); return; }
+    const once = yon < 0 ? sira[i - 1].id : (sira[i + 2] ? sira[i + 2].id : null);
+    await ogeTasi('kitap', k.id, k.rafId, once);
+    acikKitap.sirt = $(`.kitap-sirt[data-id="${k.id}"]`);
+    acikKitap.sirt.classList.add('cikti');
+  };
+  $('#kapak-sola').onclick = () => siraDegistir(-1);
+  $('#kapak-saga').onclick = () => siraDegistir(1);
   addEventListener('keydown', e => { if (e.key === 'Escape' && acikKitap) rafaGeriKoy(false); });
 
   // okuyucu

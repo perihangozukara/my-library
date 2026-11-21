@@ -755,6 +755,12 @@ body.karanlik-oda.okuyor #ses-panel { opacity: .95; }
 #yedek-durum:empty { display: none; }
 #yedek-durum { background: var(--panel2); padding: 8px 10px; border-radius: 8px; }
 
+/* ---------- 10. sürüm: dokunmatik sürükleme, kapaktan sıra ---------- */
+.raf-ogesi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.kapak-yer { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.kapak-yer label { margin: 0 !important; }
+.sirt-hayalet { transition: none !important; }
+
 /* ---------- Telefon ---------- */
 @media (max-width: 640px) {
   :root { --raf-sira: 186px; }
