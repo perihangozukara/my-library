@@ -277,7 +277,7 @@ function yedekKur() {
   };
   $('#yedek-paylas').onclick = async () => {
     if (!sonYedek) return;
-    try { await navigator.share({ files: [sonYedek], title: 'Kitaplığım yedeği' }); } catch (_) {}
+    try { await navigator.share({ files: [sonYedek], title: 'My Library yedeği' }); } catch (_) {}
   };
   $('#yedek-yukle').onclick = () => $('#yedek-dosya').click();
   $('#yedek-dosya').onchange = async e => {
@@ -640,24 +640,6 @@ async function kitapCikar(sirt) {
   sirt.classList.add('cikti');
   acikKitap = { kitap, sirt, ucan, resim, r, hazir: false };
 
-  // hedef: ekranın ortası, panelin üstü
-  const genMax = Math.min(260, innerWidth * 0.55);
-  const yukMax = innerHeight - 330;
-  let H = Math.max(160, Math.min(yukMax, genMax * (kitap.oran || 1.414)));
-  let W = H / (kitap.oran || 1.414);
-  const L = (innerWidth - W) / 2, T = Math.max(20, (innerHeight - H - 260) / 2);
-  const hizli = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  await ucan.animate([
-    { transform: 'translateY(0)' },
-    { transform: `translateY(${-Math.min(40, r.top - 10)}px)` },
-  ], { duration: hizli ? 1 : 220, easing: 'ease-out', fill: 'forwards' }).finished;
-  const anim = ucan.animate([
-    { left: r.left + 'px', top: (r.top - Math.min(40, r.top - 10)) + 'px', width: r.width + 'px', height: r.height + 'px', transform: 'none' },
-    { left: L + 'px', top: T + 'px', width: W + 'px', height: H + 'px', transform: 'none' },
-  ], { duration: hizli ? 1 : 480, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' });
-  resim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: hizli ? 1 : 420, delay: hizli ? 0 : 160, fill: 'forwards' });
-  await anim.finished;
-
   $('#kapak-ad').textContent = kitap.ad;
   const raf = raflar.find(x => x.id === kitap.rafId);
   $('#kapak-bilgi').textContent = `${kitap.sayfaSayisi} sayfa · ${raf ? raf.ad : ''}`;
@@ -677,7 +659,27 @@ async function kitapCikar(sirt) {
   $('#bastan-btn').classList.toggle('birincil', !devamVar);
   $('#bastan-btn').classList.toggle('hafif', devamVar);
   $('#kapak-raf').innerHTML = raflar.map(x => `<option value="${x.id}" ${x.id === kitap.rafId ? 'selected' : ''}>${kacis(x.ad)}</option>`).join('');
-  panel.style.top = (T + H + 14) + 'px';
+  // hedef: ekranın ortası, panelin üstü. Panelin gerçek yüksekliği ölçülür (yer imi varsa panel uzar).
+  const PAY = 14;
+  const panelH = panel.offsetHeight;
+  const genMax = Math.min(260, innerWidth * 0.55);
+  const yukMax = innerHeight - panelH - PAY * 3;
+  let H = Math.max(110, Math.min(yukMax, genMax * (kitap.oran || 1.414)));
+  let W = H / (kitap.oran || 1.414);
+  const L = (innerWidth - W) / 2, T = Math.max(PAY, (innerHeight - H - PAY - panelH) / 2);
+  const hizli = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  await ucan.animate([
+    { transform: 'translateY(0)' },
+    { transform: `translateY(${-Math.min(40, r.top - 10)}px)` },
+  ], { duration: hizli ? 1 : 220, easing: 'ease-out', fill: 'forwards' }).finished;
+  const anim = ucan.animate([
+    { left: r.left + 'px', top: (r.top - Math.min(40, r.top - 10)) + 'px', width: r.width + 'px', height: r.height + 'px', transform: 'none' },
+    { left: L + 'px', top: T + 'px', width: W + 'px', height: H + 'px', transform: 'none' },
+  ], { duration: hizli ? 1 : 480, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' });
+  resim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: hizli ? 1 : 420, delay: hizli ? 0 : 160, fill: 'forwards' });
+  await anim.finished;
+
+  panel.style.top = Math.max(PAY, Math.min(T + H + PAY, innerHeight - panelH - PAY)) + 'px';
   panel.classList.add('gorunur');
   acikKitap.hazir = true;
   (kitap.sonSayfa > 1 ? devam : $('#bastan-btn')).focus();
@@ -802,7 +804,7 @@ async function defterTikla(e) {
 
 async function defterDisaAktar() {
   const tum = (await db.hepsi('cizimler')).sort((a, b) => a.kitapAd.localeCompare(b.kitapAd, 'tr') || a.sayfa - b.sayfa);
-  let md = `# Defterim\n\n_Kitaplığım'dan dışa aktarıldı: ${new Date().toLocaleDateString('tr-TR')}_\n`;
+  let md = `# Defterim\n\n_My Library'den dışa aktarıldı: ${new Date().toLocaleDateString('tr-TR')}_\n`;
   let son = null;
   for (const c of tum) {
     const ad = (kitaplar.find(k => k.id === c.kitapId) || {}).ad || c.kitapAd;

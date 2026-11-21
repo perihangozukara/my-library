@@ -42,7 +42,7 @@ function sesDugmesi() {
   const b = $('#dk-ses');
   const ac = !acik.sec.sesAcik || acik.sec.sesAcik();
   b.setAttribute('aria-pressed', String(ac));
-  b.textContent = ac ? '🔊 Tuş sesi' : '🔇 Tuş sesi';
+  b.innerHTML = `<svg class="ik" aria-hidden="true"><use href="#i-${ac ? 'ses' : 'sessiz'}"/></svg> Tuş sesi`;
 }
 function boyla() {
   const ta = $('#dk-metin');

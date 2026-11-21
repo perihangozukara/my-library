@@ -1,6 +1,6 @@
 /* Kitaplığım · stil. Beyaz zemin yok: üç göz dostu tema. */
 :root {
-  --alt-yuk: 58px;
+  --alt-yuk: calc(58px + env(safe-area-inset-bottom, 0px)); /* ana ekran çizgisi kadar boşluk */
   --ust-yuk: 60px;
   --raf-sira: 214px;      /* bir kitap sırası + raf tahtası */
   --tahta: 20px;
@@ -276,7 +276,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- Alt çubuk ve ses paneli ---------- */
 #alt {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
-  height: var(--alt-yuk); padding: 0 12px calc(env(safe-area-inset-bottom) * .5);
+  height: var(--alt-yuk); padding: 0 12px;
   display: flex; align-items: center; justify-content: center; gap: 14px;
   background: var(--panel); border-top: 1px solid var(--cizgi);
 }
@@ -792,4 +792,48 @@ body.karanlik-oda.okuyor #ses-panel { opacity: .95; }
 }
 @media (prefers-reduced-motion: reduce) {
   .kitap-sirt { transition: none; }
+}
+
+/* ---------- 12. sürüm: ikon seti, logo, güvenli alan, telefonda taşma ---------- */
+.ik { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.btn.ikon { display: inline-flex; align-items: center; justify-content: center; }
+#ust h1 { display: flex; align-items: center; gap: .5em; min-width: 0; }
+#ust h1 .logo { width: 1.7em; height: 1.7em; flex: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+#ust h1 span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kalem-btn .ik { width: 18px; height: 18px; }
+.ses-ac .ik { width: 20px; height: 20px; }
+.parlaklik .ik { width: 18px; height: 18px; opacity: .8; }
+#isik-btn .yazi, #ses-panel-btn .yazi { margin-left: .1em; }
+
+/* Kapak paneli alt çubuğun üstünde dursun; uzunsa kendi içinde kaysın */
+#kapak-sahne { z-index: 85; }
+.ucan-kitap { z-index: 86; }
+#kapak-panel { z-index: 87; max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+/* Bildirim yalnız yazıdır; altındaki düğmeye dokunmayı engellemesin */
+#bildirim { pointer-events: none; }
+/* Peri ışıklarında ampulün dokunma alanı büyük olsun */
+.peri-isiklari i::after { content: ""; position: absolute; inset: -12px -9px; }
+/* Rafın üstündeki ahşap korniş dışarı taşar; sayfa yana kaymasın */
+#kitaplik { overflow-x: clip; }
+
+/* Güvenli alan (saat/pil bölgesi, çentik, ana ekran çizgisi) */
+#ust { padding: calc(8px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+#ok-ust { padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.dk-ust { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+#defterim { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+#alt { padding: 0 max(12px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(12px, env(safe-area-inset-left, 0px)); }
+
+@media (max-width: 640px) {
+  #ust { gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) 8px max(10px, env(safe-area-inset-left, 0px)); }
+  #ust h1 { font-size: 1.05rem; }
+  #ust nav { flex: none; }
+  #ust nav .btn { min-width: 38px; padding: .45em .5em; }
+  #ust nav .btn .ik { width: 20px; height: 20px; }
+  #ses-panel-btn .yazi { display: none; }
+  #alt { gap: 6px; padding: 0 max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); }
+  #alt .btn { padding: .45em .55em; }
+  .parlaklik input { width: 60px; }
+  #raflar::before { left: -6px; right: -6px; }
+  #raflar::after { left: -3px; right: -3px; }
+  #ok-ust { padding: calc(6px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px)); }
 }

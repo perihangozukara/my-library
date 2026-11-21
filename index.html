@@ -3,27 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kitaplığım</title>
+<title>My Library</title>
 <meta name="description" content="PDF'lerin için ahşap raflı, internetsiz çalışan kitaplık.">
 <meta name="theme-color" content="#3b2a1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Library">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="ikonlar/ikon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="ikonlar/ikon-192.png">
+<link rel="apple-touch-icon" href="ikonlar/apple-touch-icon.png">
 <link rel="stylesheet" href="fontlar/courier-prime.css">
 <link rel="stylesheet" href="css/stil.css">
 </head>
 <body data-tema="kagit">
+<svg id="ikon-seti" width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <linearGradient id="lg-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e4629"/><stop offset="1" stop-color="#3a2314"/></linearGradient>
+  <linearGradient id="lg-gok" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2d4a"/><stop offset="1" stop-color="#5a6f98"/></linearGradient>
+  <clipPath id="lg-kemer"><path d="M136 404V236a120 120 0 0 1 240 0v168z"/></clipPath>
+ </defs>
+ <symbol id="logo" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="url(#lg-bg)"/>
+  <g clip-path="url(#lg-kemer)"><rect x="100" y="100" width="320" height="320" fill="url(#lg-gok)"/><circle cx="318" cy="200" r="26" fill="#f3e2b0"/><circle cx="330" cy="192" r="24" fill="#2a3a5c"/><g fill="#f3e2b0"><circle cx="190" cy="170" r="4"/><circle cx="232" cy="140" r="3"/><circle cx="268" cy="196" r="3"/><circle cx="176" cy="232" r="3"/></g></g>
+  <path d="M136 404V236a120 120 0 0 1 240 0v168" fill="none" stroke="#c8894a" stroke-width="16"/>
+  <path d="M256 116v168M136 270h240" stroke="#c8894a" stroke-width="9" opacity=".7"/>
+  <rect x="160" y="300" width="40" height="104" rx="6" fill="#b5473a"/><rect x="160" y="318" width="40" height="7" fill="#e9c46a"/>
+  <rect x="206" y="322" width="32" height="82" rx="6" fill="#3f6d5d"/>
+  <rect x="244" y="290" width="46" height="114" rx="6" fill="#e0b25a"/><rect x="244" y="308" width="46" height="7" fill="#7a4a24"/>
+  <g transform="rotate(-14 340 404)"><rect x="296" y="316" width="36" height="88" rx="6" fill="#2f5274"/></g>
+  <rect x="110" y="400" width="292" height="30" rx="8" fill="#dcaa6e"/><rect x="110" y="400" width="292" height="6" rx="3" fill="#f0c890"/>
+ </symbol>
+ <symbol id="i-ekle" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h11v12"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H13"/><path d="M6.5 21H13"/><path d="M18 16v6M15 19h6"/></symbol>
+ <symbol id="i-raf" viewBox="0 0 24 24"><path d="M3 21h18M3 3h18"/><path d="M5 21V3M19 21V3"/><path d="M5 12h14"/><path d="M8 12V6M11 12V7M14.5 11.5l1.8-5"/><path d="M8 21v-6M11 21v-5"/></symbol>
+ <symbol id="i-defter" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18"/><path d="M12.5 8H16M12.5 12H16"/><path d="M3 7h2M3 12h2M3 17h2"/></symbol>
+ <symbol id="i-susle" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"/><path d="M18.5 15l.8 2 2 .7-2 .8-.8 2-.7-2-2-.8 2-.7z"/><path d="M5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></symbol>
+ <symbol id="i-bilgi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></symbol>
+ <symbol id="i-daktilo" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M6 13.5h.01M18 13.5h.01M9 14h6"/></symbol>
+ <symbol id="i-sol" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+ <symbol id="i-sag" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+ <symbol id="i-geri" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+ <symbol id="i-el" viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5"/><path d="M14 11.5V5.5a1.5 1.5 0 0 1 3 0V14"/><path d="M8 13l-1.6-1.8a1.6 1.6 0 0 0-2.4 2.1l3.4 4.6A6 6 0 0 0 12.2 20H13a4 4 0 0 0 4-4v-2"/></symbol>
+ <symbol id="i-yerimi" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></symbol>
+ <symbol id="i-isaretler" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h7"/><path d="M4 5h2v2H4zM4 11h2v2H4zM4 17h2v2H4z"/></symbol>
+ <symbol id="i-uzak" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8 11h6"/></symbol>
+ <symbol id="i-yakin" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8 11h6M11 8v6"/></symbol>
+ <symbol id="i-ses" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+ <symbol id="i-sessiz" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+ <symbol id="i-muzik" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+ <symbol id="i-sonraki" viewBox="0 0 24 24"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></symbol>
+ <symbol id="i-sayfa" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></symbol>
+ <symbol id="i-isik" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></symbol>
+ <symbol id="i-gunes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+ <symbol id="i-indir" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 20h16"/></symbol>
+ <symbol id="i-yukle" viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 20h16"/></symbol>
+ <symbol id="i-paylas" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+ <symbol id="i-kilit" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="i-kapat" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</svg>
+
 
 <!-- ÜST ÇUBUK -->
 <header id="ust">
-  <h1>📚 Kitaplığım</h1>
+  <h1><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><use href="#logo"/></svg><span>My Library</span></h1>
   <nav>
-    <button class="btn birincil" id="kitap-ekle-btn" title="PDF ekle">+ Kitap ekle</button>
+    <button class="btn birincil" id="kitap-ekle-btn" title="PDF ekle" aria-label="Kitap ekle"><svg class="ik" aria-hidden="true"><use href="#i-ekle"/></svg><span class="yazi">Kitap ekle</span></button>
     <input type="file" id="dosya-sec" accept="application/pdf,.pdf" multiple hidden>
-    <button class="btn" id="yeni-raf-btn" aria-label="Yeni raf"><span aria-hidden="true">🗄️</span><span class="yazi">Yeni raf</span></button>
-    <button class="btn" id="defterim-btn" aria-label="Defterim"><span aria-hidden="true">📒</span><span class="yazi">Defterim</span></button>
-    <button class="btn" id="susle-btn" aria-label="Süsle"><span aria-hidden="true">🎨</span><span class="yazi">Süsle</span></button>
-    <button class="btn ikon" id="hakkinda-btn" title="Hakkında, depolama ve yedek" aria-label="Hakkında, depolama ve yedek">ⓘ</button>
+    <button class="btn" id="yeni-raf-btn" aria-label="Yeni raf"><svg class="ik" aria-hidden="true"><use href="#i-raf"/></svg><span class="yazi">Yeni raf</span></button>
+    <button class="btn" id="defterim-btn" aria-label="Defterim"><svg class="ik" aria-hidden="true"><use href="#i-defter"/></svg><span class="yazi">Defterim</span></button>
+    <button class="btn" id="susle-btn" aria-label="Süsle"><svg class="ik" aria-hidden="true"><use href="#i-susle"/></svg><span class="yazi">Süsle</span></button>
+    <button class="btn ikon" id="hakkinda-btn" title="Hakkında, depolama ve yedek" aria-label="Hakkında, depolama ve yedek"><svg class="ik" aria-hidden="true"><use href="#i-bilgi"/></svg></button>
   </nav>
 </header>
 
@@ -70,12 +119,12 @@
     </div>
     <p id="kapak-yerimi" class="kucuk" hidden></p>
     <button class="btn hafif" id="yerimi-git" hidden></button>
-    <button class="btn" id="kapak-daktilo">⌨ Daktilo notu</button>
+    <button class="btn" id="kapak-daktilo"><svg class="ik" aria-hidden="true"><use href="#i-daktilo"/></svg> Daktilo notu</button>
     <div class="kapak-yer">
       <label class="kucuk">Raf: <select id="kapak-raf"></select></label>
       <span class="kucuk">Sırası:</span>
-      <button class="btn ikon" id="kapak-sola" title="Rafta bir sola taşı" aria-label="Rafta bir sola taşı">◀</button>
-      <button class="btn ikon" id="kapak-saga" title="Rafta bir sağa taşı" aria-label="Rafta bir sağa taşı">▶</button>
+      <button class="btn ikon" id="kapak-sola" title="Rafta bir sola taşı" aria-label="Rafta bir sola taşı"><svg class="ik" aria-hidden="true"><use href="#i-sol"/></svg></button>
+      <button class="btn ikon" id="kapak-saga" title="Rafta bir sağa taşı" aria-label="Rafta bir sağa taşı"><svg class="ik" aria-hidden="true"><use href="#i-sag"/></svg></button>
     </div>
     <button class="btn hafif" id="kapak-kapat">Rafa geri koy</button>
     <button class="btn hafif tehlike" id="kapak-kaldir">Kitaplıktan kaldır</button>
@@ -85,27 +134,27 @@
 <!-- OKUYUCU -->
 <section id="okuyucu" hidden>
   <div id="ok-ust">
-    <button class="btn" id="ok-kapat" title="Kitabı kapat (Esc)">← Raf</button>
+    <button class="btn" id="ok-kapat" title="Kitabı kapat (Esc)"><svg class="ik" aria-hidden="true"><use href="#i-geri"/></svg> Raf</button>
     <span id="ok-baslik"></span>
     <div id="ok-kalemler" role="group" aria-label="Kalemler">
-      <button class="kalem-btn secili" data-kalem="" title="Kalem kapalı (sayfa çevir)">✋</button>
-      <button class="kalem-btn yerimi-btn" data-kalem="yerimi" title="Kaldığım paragrafı işaretle: bas, sonra satıra dokun">🔖</button>
+      <button class="kalem-btn secili" data-kalem="" title="Kalem kapalı (sayfa çevir)" aria-label="Kalem kapalı"><svg class="ik" aria-hidden="true"><use href="#i-el"/></svg></button>
+      <button class="kalem-btn yerimi-btn" data-kalem="yerimi" title="Kaldığım paragrafı işaretle: bas, sonra satıra dokun" aria-label="Kaldığım paragraf"><svg class="ik" aria-hidden="true"><use href="#i-yerimi"/></svg></button>
     </div>
     <div id="ok-zoom-grup" role="group" aria-label="Yakınlaştırma">
-      <button class="btn ikon" id="ok-uzak" title="Uzaklaştır (Ctrl + fare tekerleği)">−</button>
+      <button class="btn ikon" id="ok-uzak" title="Uzaklaştır (Ctrl + fare tekerleği)" aria-label="Uzaklaştır"><svg class="ik" aria-hidden="true"><use href="#i-uzak"/></svg></button>
       <button class="btn ikon" id="ok-zoom" title="Ekrana sığdır">100%</button>
-      <button class="btn ikon" id="ok-yakin" title="Yakınlaştır (Ctrl + fare tekerleği)">+</button>
+      <button class="btn ikon" id="ok-yakin" title="Yakınlaştır (Ctrl + fare tekerleği)" aria-label="Yakınlaştır"><svg class="ik" aria-hidden="true"><use href="#i-yakin"/></svg></button>
     </div>
-    <button class="btn ikon" id="ok-cizim-btn" title="Bu kitapta işaretlediğin cümleler">📑</button>
-    <button class="btn ikon" id="ok-daktilo" title="Bu kitabın daktilo notu">⌨</button>
+    <button class="btn ikon" id="ok-cizim-btn" title="Bu kitapta işaretlediğin cümleler" aria-label="İşaretlediklerim"><svg class="ik" aria-hidden="true"><use href="#i-isaretler"/></svg></button>
+    <button class="btn ikon" id="ok-daktilo" title="Bu kitabın daktilo notu" aria-label="Daktilo notu"><svg class="ik" aria-hidden="true"><use href="#i-daktilo"/></svg></button>
     <div id="ok-gezinti">
-      <button class="btn ikon" id="ok-onceki" title="Önceki sayfa">‹</button>
+      <button class="btn ikon" id="ok-onceki" title="Önceki sayfa" aria-label="Önceki sayfa"><svg class="ik" aria-hidden="true"><use href="#i-sol"/></svg></button>
       <input id="ok-sayfa" type="number" min="1" aria-label="Sayfa"> <span id="ok-toplam"></span>
-      <button class="btn ikon" id="ok-sonraki" title="Sonraki sayfa">›</button>
+      <button class="btn ikon" id="ok-sonraki" title="Sonraki sayfa" aria-label="Sonraki sayfa"><svg class="ik" aria-hidden="true"><use href="#i-sag"/></svg></button>
     </div>
   </div>
   <aside id="ok-cizimler" hidden aria-label="Bu kitaptaki çizimlerin">
-    <div class="oc-ust"><b>📑 İşaretlediklerim <span id="ok-cizimler-sayi"></span></b><button class="btn ikon" id="ok-cizimler-kapat" aria-label="Kapat">×</button></div>
+    <div class="oc-ust"><b>📑 İşaretlediklerim <span id="ok-cizimler-sayi"></span></b><button class="btn ikon" id="ok-cizimler-kapat" aria-label="Kapat"><svg class="ik" aria-hidden="true"><use href="#i-kapat"/></svg></button></div>
     <ul></ul>
   </aside>
   <div id="ok-sahne">
@@ -135,9 +184,9 @@
 <!-- DAKTİLO NOTU (2. sürüm) -->
 <section id="daktilo" hidden>
   <div class="dk-ust">
-    <button class="btn" id="dk-kapat">← Kapat</button>
+    <button class="btn" id="dk-kapat"><svg class="ik" aria-hidden="true"><use href="#i-geri"/></svg> Kapat</button>
     <span id="dk-durum" class="kucuk"></span>
-    <button class="btn" id="dk-ses" aria-pressed="true">🔊 Tuş sesi</button>
+    <button class="btn" id="dk-ses" aria-pressed="true"><svg class="ik" aria-hidden="true"><use href="#i-ses"/></svg> Tuş sesi</button>
   </div>
   <div class="dk-masa">
     <div id="dk-kagit">
@@ -155,21 +204,21 @@
     <button class="tema-btn" data-tema="sepya" title="Sepya">Sepya</button>
     <button class="tema-btn" data-tema="gece" title="Gece">Gece</button>
   </div>
-  <label class="alt-grup parlaklik" title="Parlaklık">☀ <input type="range" id="parlaklik" min="35" max="100" value="100"></label>
-  <button class="btn" id="isik-btn" aria-pressed="false" title="Işıkları kapat: oda kararır, yalnız yanan fener, mum, abajur ve peri ışıkları aydınlatır">💡<span class="yazi"> Işıklar</span></button>
-  <button class="btn" id="ses-panel-btn" aria-expanded="false">🔊 Sesler</button>
+  <label class="alt-grup parlaklik" title="Parlaklık"><svg class="ik" aria-hidden="true"><use href="#i-gunes"/></svg><input type="range" id="parlaklik" min="35" max="100" value="100"></label>
+  <button class="btn" id="isik-btn" aria-pressed="false" title="Işıkları kapat: oda kararır, yalnız yanan fener, mum, abajur ve peri ışıkları aydınlatır" aria-label="Işıklar"><svg class="ik" aria-hidden="true"><use href="#i-isik"/></svg><span class="yazi">Işıklar</span></button>
+  <button class="btn" id="ses-panel-btn" aria-expanded="false" aria-label="Sesler"><svg class="ik" aria-hidden="true"><use href="#i-ses"/></svg><span class="yazi">Sesler</span></button>
 </footer>
 
 <div id="ses-panel" hidden>
   <div class="ses-satir">
-    <button class="ses-ac" id="muzik-btn" aria-pressed="false">🎵</button>
+    <button class="ses-ac" id="muzik-btn" aria-pressed="false" aria-label="Müzik"><svg class="ik" aria-hidden="true"><use href="#i-muzik"/></svg></button>
     <div class="ses-ad">Müzik <small id="muzik-ad"></small></div>
-    <button class="btn ikon" id="muzik-sonraki" title="Sonraki parça">⏭</button>
+    <button class="btn ikon" id="muzik-sonraki" title="Sonraki parça" aria-label="Sonraki parça"><svg class="ik" aria-hidden="true"><use href="#i-sonraki"/></svg></button>
     <input type="range" id="muzik-duzey" min="0" max="100" value="45">
   </div>
   <div id="doga-satirlar"></div>
   <div class="ses-satir">
-    <button class="ses-ac" id="sayfa-ses-btn" aria-pressed="true">📄</button>
+    <button class="ses-ac" id="sayfa-ses-btn" aria-pressed="true" aria-label="Sayfa çevirme sesi"><svg class="ik" aria-hidden="true"><use href="#i-sayfa"/></svg></button>
     <div class="ses-ad">Sayfa çevirme sesi</div>
   </div>
 </div>
@@ -190,7 +239,7 @@
       <button class="btn" id="kurulum-ekle" type="button">Ekle</button>
     </div>
     <ul id="kurulum-secilen" class="secilen"></ul>
-    <div class="dugmeler"><button class="btn birincil" id="kurulum-tamam" value="tamam">Kitaplığımı kur</button></div>
+    <div class="dugmeler"><button class="btn birincil" id="kurulum-tamam" value="tamam">Kitaplığı kur</button></div>
   </form>
 </dialog>
 
@@ -249,15 +298,15 @@
 <!-- HAKKINDA -->
 <dialog id="hakkinda-dlg">
   <form method="dialog">
-    <h2>Kitaplığım · Hakkında ve yedek</h2>
+    <h2>My Library · Hakkında ve yedek</h2>
     <h3>Depolama ve yedek</h3>
     <p class="kucuk" id="depo-bilgi">Ölçülüyor…</p>
     <p class="kucuk">Kitapların, çizimlerin ve notların yalnız bu cihazın tarayıcısında durur. Başka bir cihaza (tablet, telefon) taşımak için <b>Yedek al</b>, dosyayı o cihaza gönder (Drive, kablo, WhatsApp…) ve orada <b>Yedekten geri yükle</b>. Telefon ve tablette uygulamayı ana ekrana kurarsan tarayıcı verileri silmez.</p>
     <div class="dugmeler yedek-dugmeler">
-      <button type="button" class="btn" id="yedek-al">⬇ Yedek al</button>
-      <button type="button" class="btn" id="yedek-paylas" hidden>📤 Yedeği paylaş</button>
-      <button type="button" class="btn" id="yedek-yukle">⬆ Yedekten geri yükle</button>
-      <button type="button" class="btn hafif" id="kalici-iste" hidden>🔒 Kalıcı depolamayı aç</button>
+      <button type="button" class="btn" id="yedek-al"><svg class="ik" aria-hidden="true"><use href="#i-indir"/></svg> Yedek al</button>
+      <button type="button" class="btn" id="yedek-paylas" hidden><svg class="ik" aria-hidden="true"><use href="#i-paylas"/></svg> Yedeği paylaş</button>
+      <button type="button" class="btn" id="yedek-yukle"><svg class="ik" aria-hidden="true"><use href="#i-yukle"/></svg> Yedekten geri yükle</button>
+      <button type="button" class="btn hafif" id="kalici-iste" hidden><svg class="ik" aria-hidden="true"><use href="#i-kilit"/></svg> Kalıcı depolamayı aç</button>
       <input type="file" id="yedek-dosya" accept=".kitapligim,application/octet-stream" hidden>
     </div>
     <p class="kucuk" id="yedek-durum" role="status"></p>

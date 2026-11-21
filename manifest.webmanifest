@@ -1,6 +1,6 @@
 {
-  "name": "Kitaplığım",
-  "short_name": "Kitaplığım",
+  "name": "My Library",
+  "short_name": "My Library",
   "description": "PDF'lerin için ahşap raflı, internetsiz çalışan kitaplık.",
   "lang": "tr",
   "start_url": "./",

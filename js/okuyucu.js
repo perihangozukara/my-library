@@ -458,8 +458,9 @@ function renkKodu(ad) { return (KALEMLER.find(k => k.ad === ad) || KALEMLER[0]).
 // köşe kıvrılıp sayfa çevrilmesin diye bu olaylar ona ulaşmadan durdurulur.
 // Kalem pointer olaylarıyla çalıştığı için etkilenmez.
 const KALEM_ENGEL = ['mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend'];
+let tutamEngel = false, tutamEngelZaman = 0; // iki parmakla büyütürken de StPageFlip olayları durdurulur
 function kalemEngeli(e) {
-  if (!d || !d.kalem) return;
+  if (!d || (!d.kalem && !tutamEngel)) return;
   if (e.target.closest && e.target.closest('#ok-ust, #alt, #ses-panel, #etiket-kutu, dialog')) return;
   e.stopPropagation();
 }
@@ -518,6 +519,10 @@ export function kalemKur() {
       kitapEl.style.transformOrigin = `${(a.x + b.x) / 2 - kr.left}px ${(a.y + b.y) / 2 - kr.top}px`;
       tutam = { bas: Math.max(20, uzaklik(a, b)), zoom: d.zoom, hedef: d.zoom };
       kaydir = null; dokun = null;
+      // İki parmak hareketi sürerken StPageFlip dokunuşları görmesin (yoksa kaydırma sanıp sayfa/yön değiştiriyor)
+      clearTimeout(tutamEngelZaman); tutamEngel = true; engelAyarla(true);
+      // StPageFlip ilk parmağı kaydetmiş olabilir: 700 ms sonra kendiliğinden katlamaya başlamasın
+      try { d.pf.getUI().touchPoint = null; } catch (_) {}
     } else if (parmaklar.size === 1 && d.zoom > 1) {
       kaydir = { x: e.clientX, y: e.clientY };
     }
@@ -554,7 +559,11 @@ export function kalemKur() {
         sahne.scrollTop = cy * sahne.scrollHeight - sahne.clientHeight / 2;
       }
     }
-    if (!parmaklar.size) kaydir = null;
+    if (!parmaklar.size) {
+      kaydir = null;
+      // son parmağın touchend olayı da StPageFlip'e gitmesin; sonra engeli kalem durumuna geri al
+      if (tutamEngel) tutamEngelZaman = setTimeout(() => { tutamEngel = false; engelAyarla(!!(d && d.kalem)); }, 80);
+    }
   };
   sahne.addEventListener('pointerup', parmakBitti, true);
   sahne.addEventListener('pointercancel', parmakBitti, true);
@@ -734,6 +743,7 @@ export async function okuyucuKapat() {
   if (k) { k.sonSayfa = no; k.sonOkuma = Date.now(); await db.koy('kitaplar', k); }
   window.removeEventListener('resize', yenidenBoyutla);
   document.removeEventListener('keydown', tusla);
+  kalemSec(null); // yeniden açılınca eski kalem seçili görünmesin
   d = null;
   engelAyarla(false);
   $('#ok-sahne').appendChild($('#ok-kalem-katman'));

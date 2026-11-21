@@ -42,7 +42,7 @@ export function yedekDosyaAdi() {
 // Bu cihazın ayarları (tema, parlaklık…) korunur.
 export async function yedekYukle(dosya, ilerleme = () => {}) {
   const bas = new Uint8Array(await dosya.slice(0, 12).arrayBuffer());
-  if (new TextDecoder().decode(bas.slice(0, 8)) !== SIHIR) throw new Error('Bu bir Kitaplığım yedek dosyası değil.');
+  if (new TextDecoder().decode(bas.slice(0, 8)) !== SIHIR) throw new Error('Bu bir My Library yedek dosyası değil.');
   const uz = new DataView(bas.buffer).getUint32(8);
   const baslik = JSON.parse(new TextDecoder().decode(await dosya.slice(12, 12 + uz).arrayBuffer()));
   if (baslik.surum !== 1) throw new Error('Bu yedek daha yeni bir sürümle alınmış.');
