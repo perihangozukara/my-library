@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kitaplığım</title>
+<meta name="description" content="PDF'lerin için ahşap raflı, internetsiz çalışan kitaplık.">
+<meta name="theme-color" content="#3b2a1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="ikonlar/ikon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="ikonlar/ikon-192.png">
+<link rel="stylesheet" href="fontlar/courier-prime.css">
+<link rel="stylesheet" href="css/stil.css">
+</head>
+<body data-tema="kagit">
+
+<!-- ÜST ÇUBUK -->
+<header id="ust">
+  <h1>📚 Kitaplığım</h1>
+  <nav>
+    <button class="btn birincil" id="kitap-ekle-btn" title="PDF ekle">+ Kitap ekle</button>
+    <input type="file" id="dosya-sec" accept="application/pdf,.pdf" multiple hidden>
+    <button class="btn" id="yeni-raf-btn" aria-label="Yeni raf"><span aria-hidden="true">🗄️</span><span class="yazi">Yeni raf</span></button>
+    <button class="btn" id="defterim-btn" aria-label="Defterim"><span aria-hidden="true">📒</span><span class="yazi">Defterim</span></button>
+    <button class="btn" id="susle-btn" aria-label="Süsle"><span aria-hidden="true">🎨</span><span class="yazi">Süsle</span></button>
+    <button class="btn ikon" id="hakkinda-btn" title="Hakkında">ⓘ</button>
+  </nav>
+</header>
+
+<!-- KİTAPLIK -->
+<main id="kitaplik" aria-label="Raflar">
+  <div id="pencere" aria-hidden="true">
+    <svg viewBox="0 0 260 150" width="260" height="150">
+      <defs><clipPath id="cam-kes"><rect x="22" y="14" width="216" height="118" rx="3"/></clipPath></defs>
+      <g clip-path="url(#cam-kes)">
+        <rect class="gok" x="0" y="0" width="260" height="150"/>
+        <rect class="ufuk" x="0" y="80" width="260" height="60"/>
+        <circle class="gunes" cx="196" cy="42" r="14"/>
+        <g class="yildizlar"><circle cx="50" cy="30" r="1.2"/><circle cx="90" cy="22" r="1"/><circle cx="130" cy="40" r="1.4"/><circle cx="160" cy="24" r="1"/><circle cx="70" cy="56" r="1"/><circle cx="215" cy="70" r="1.2"/><circle cx="110" cy="66" r="0.9"/><circle cx="40" cy="74" r="1"/></g>
+        <g class="ay"><circle cx="190" cy="40" r="13"/><circle cx="186" cy="37" r="2.4" class="krater"/><circle cx="194" cy="45" r="1.6" class="krater"/></g>
+        <g class="bulutlar">
+          <g class="bulut b1"><ellipse cx="60" cy="40" rx="22" ry="8"/><ellipse cx="74" cy="35" rx="14" ry="9"/><ellipse cx="48" cy="37" rx="11" ry="7"/></g>
+          <g class="bulut b2"><ellipse cx="150" cy="62" rx="18" ry="6"/><ellipse cx="160" cy="58" rx="11" ry="7"/></g>
+        </g>
+        <path class="tepe" d="M0 118 Q40 96 86 110 T170 104 T260 112 V150 H0z"/>
+        <path class="tepe2" d="M0 128 Q60 112 120 124 T260 122 V150 H0z"/>
+        <path class="kus" d="M0 0 q5 -5 10 0 q5 -5 10 0" fill="none"/>
+        <g class="damlalar"><line x1="40" y1="0" x2="36" y2="12"/><line x1="80" y1="0" x2="76" y2="12"/><line x1="120" y1="0" x2="116" y2="12"/><line x1="160" y1="0" x2="156" y2="12"/><line x1="200" y1="0" x2="196" y2="12"/><line x1="60" y1="0" x2="56" y2="12"/><line x1="140" y1="0" x2="136" y2="12"/><line x1="180" y1="0" x2="176" y2="12"/><line x1="220" y1="0" x2="216" y2="12"/><line x1="100" y1="0" x2="96" y2="12"/></g>
+      </g>
+      <rect class="cerceve" x="22" y="14" width="216" height="118" rx="3"/>
+      <path class="kayit" d="M130 14v118M22 73h216"/>
+      <path class="perde sol" d="M4 6 Q24 50 14 140 L4 140z"/>
+      <path class="perde sag" d="M256 6 Q236 50 246 140 L256 140z"/>
+      <rect class="korniz" x="0" y="2" width="260" height="6" rx="3"/>
+      <rect class="pervaz" x="14" y="132" width="232" height="9" rx="2"/>
+    </svg>
+  </div>
+  <div id="raflar"></div>
+  <p id="bos-ipucu" hidden>PDF'lerini buraya sürükle ya da <b>+ Kitap ekle</b>'ye bas.</p>
+</main>
+
+<!-- KİTAP AÇILIŞI (raftan çıkan kitap) -->
+<div id="kapak-sahne" hidden>
+  <div id="kapak-panel">
+    <h2 id="kapak-ad"></h2>
+    <p id="kapak-bilgi"></p>
+    <div class="dugmeler">
+      <button class="btn birincil" id="bastan-btn">Baştan oku</button>
+      <button class="btn birincil" id="devam-btn" hidden></button>
+    </div>
+    <button class="btn" id="kapak-daktilo">⌨ Daktilo notu</button>
+    <label class="kucuk">Raf: <select id="kapak-raf"></select></label>
+    <button class="btn hafif" id="kapak-kapat">Rafa geri koy</button>
+    <button class="btn hafif tehlike" id="kapak-kaldir">Kitaplıktan kaldır</button>
+  </div>
+</div>
+
+<!-- OKUYUCU -->
+<section id="okuyucu" hidden>
+  <div id="ok-ust">
+    <button class="btn" id="ok-kapat" title="Kitabı kapat (Esc)">← Raf</button>
+    <span id="ok-baslik"></span>
+    <div id="ok-kalemler" role="group" aria-label="Kalemler">
+      <button class="kalem-btn secili" data-kalem="" title="Kalem kapalı (sayfa çevir)">✋</button>
+    </div>
+    <div id="ok-zoom-grup" role="group" aria-label="Yakınlaştırma">
+      <button class="btn ikon" id="ok-uzak" title="Uzaklaştır (Ctrl + fare tekerleği)">−</button>
+      <button class="btn ikon" id="ok-zoom" title="Ekrana sığdır">100%</button>
+      <button class="btn ikon" id="ok-yakin" title="Yakınlaştır (Ctrl + fare tekerleği)">+</button>
+    </div>
+    <button class="btn ikon" id="ok-daktilo" title="Bu kitabın daktilo notu">⌨</button>
+    <div id="ok-gezinti">
+      <button class="btn ikon" id="ok-onceki" title="Önceki sayfa">‹</button>
+      <input id="ok-sayfa" type="number" min="1" aria-label="Sayfa"> <span id="ok-toplam"></span>
+      <button class="btn ikon" id="ok-sonraki" title="Sonraki sayfa">›</button>
+    </div>
+  </div>
+  <div id="ok-sahne">
+    <div id="ok-kalem-katman" hidden></div>
+    <p id="ok-yukleniyor">Kitap açılıyor…</p>
+  </div>
+</section>
+<div id="etiket-kutu" hidden></div>
+
+<!-- DEFTERİM -->
+<section id="defterim" hidden>
+  <div class="defter-ust">
+    <h2>📒 Defterim</h2>
+    <button class="btn" id="defter-disa">Dışa aktar (.md)</button>
+    <button class="btn" id="defter-kapat">Kapat</button>
+  </div>
+  <div class="defter-suzgec">
+    <div id="defter-etiketler" class="cipler"></div>
+    <div id="defter-renkler" class="cipler"></div>
+    <select id="defter-kitap"><option value="">Bütün kitaplar</option></select>
+    <input id="defter-ara" type="search" placeholder="Ara…">
+  </div>
+  <ul id="defter-liste"></ul>
+  <p id="defter-bos" hidden>Henüz çizim yok. Bir kitap aç, üstteki renkli kalemlerden birini seç ve cümlenin üstünden geç.</p>
+</section>
+
+<!-- DAKTİLO NOTU (2. sürüm) -->
+<section id="daktilo" hidden>
+  <div class="dk-ust">
+    <button class="btn" id="dk-kapat">← Kapat</button>
+    <span id="dk-durum" class="kucuk"></span>
+    <button class="btn" id="dk-ses" aria-pressed="true">🔊 Tuş sesi</button>
+  </div>
+  <div class="dk-masa">
+    <div id="dk-kagit">
+      <div class="dk-baslik"><span id="dk-kitap"></span><span id="dk-tarih"></span></div>
+      <textarea id="dk-metin" spellcheck="false" aria-label="Daktilo notu" placeholder="Yazmaya başla…"></textarea>
+    </div>
+  </div>
+</section>
+<div id="sus-menu" hidden></div>
+
+<!-- ALT ÇUBUK: görünüm ve sesler -->
+<footer id="alt">
+  <div class="alt-grup" role="group" aria-label="Tema">
+    <button class="tema-btn" data-tema="kagit" title="Kâğıt">Kâğıt</button>
+    <button class="tema-btn" data-tema="sepya" title="Sepya">Sepya</button>
+    <button class="tema-btn" data-tema="gece" title="Gece">Gece</button>
+  </div>
+  <label class="alt-grup parlaklik" title="Parlaklık">☀ <input type="range" id="parlaklik" min="35" max="100" value="100"></label>
+  <button class="btn" id="isik-btn" aria-pressed="false" title="Işıkları kapat: oda kararır, yalnız yanan fener, mum, abajur ve peri ışıkları aydınlatır">💡<span class="yazi"> Işıklar</span></button>
+  <button class="btn" id="ses-panel-btn" aria-expanded="false">🔊 Sesler</button>
+</footer>
+
+<div id="ses-panel" hidden>
+  <div class="ses-satir">
+    <button class="ses-ac" id="muzik-btn" aria-pressed="false">🎵</button>
+    <div class="ses-ad">Müzik <small id="muzik-ad"></small></div>
+    <button class="btn ikon" id="muzik-sonraki" title="Sonraki parça">⏭</button>
+    <input type="range" id="muzik-duzey" min="0" max="100" value="45">
+  </div>
+  <div id="doga-satirlar"></div>
+  <div class="ses-satir">
+    <button class="ses-ac" id="sayfa-ses-btn" aria-pressed="true">📄</button>
+    <div class="ses-ad">Sayfa çevirme sesi</div>
+  </div>
+</div>
+
+<div id="karanlik" hidden aria-hidden="true"></div>
+<div id="karartma" aria-hidden="true"></div>
+<div id="birak-ipucu" hidden>PDF'leri bırak, kitaplığa ekleyelim</div>
+<div id="bildirim" hidden></div>
+
+<!-- İLK KURULUM -->
+<dialog id="kurulum-dlg">
+  <form method="dialog">
+    <h2>Raflarını kur</h2>
+    <p>Hangi raflar olsun? Dokunarak seç ya da kendin yaz. Sonra da "+ Yeni raf" ile ekleyebilirsin.</p>
+    <div id="kurulum-oneri" class="cipler"></div>
+    <div class="satir">
+      <input id="kurulum-girdi" placeholder="Raf adı yaz (ör. Polisiye)">
+      <button class="btn" id="kurulum-ekle" type="button">Ekle</button>
+    </div>
+    <ul id="kurulum-secilen" class="secilen"></ul>
+    <div class="dugmeler"><button class="btn birincil" id="kurulum-tamam" value="tamam">Kitaplığımı kur</button></div>
+  </form>
+</dialog>
+
+<!-- KİTAP EKLE -->
+<dialog id="ekle-dlg">
+  <form method="dialog">
+    <h2>Kitap ekle <small id="ekle-sira"></small></h2>
+    <div class="ekle-icerik">
+      <img id="ekle-kapak" alt="">
+      <div>
+        <label>Kitabın adı<input id="ekle-ad" required pattern=".*\S.*" title="Ad boş olamaz."></label>
+        <label>Raf<select id="ekle-raf" required></select></label>
+        <p id="ekle-oneri" class="kucuk"></p>
+        <p id="ekle-sayfa" class="kucuk"></p>
+      </div>
+    </div>
+    <div class="dugmeler">
+      <button class="btn hafif" value="gec" formnovalidate>Bu kitabı geç</button>
+      <button class="btn birincil" value="ekle">Rafa koy</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- RAF -->
+<dialog id="raf-dlg">
+  <form method="dialog">
+    <h2 id="raf-dlg-baslik">Yeni raf</h2>
+    <label>Rafın adı<input id="raf-ad" required pattern=".*\S.*" title="Ad boş olamaz."></label>
+    <label>Anahtar kelimeler <small>(virgülle; raf önerisi bunlara bakar)</small><textarea id="raf-kelimeler" rows="3" placeholder="ör. polisiye, dedektif, cinayet"></textarea></label>
+    <p class="kucuk" id="raf-hazir"></p>
+    <div class="dugmeler">
+      <button class="btn hafif" id="raf-kaldir" value="kaldir" formnovalidate hidden>Rafı kaldır</button>
+      <button class="btn hafif" value="vazgec" formnovalidate>Vazgeç</button>
+      <button class="btn birincil" value="kaydet">Kaydet</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- SÜSLE (2. sürüm) -->
+<dialog id="susle-dlg">
+  <form method="dialog">
+    <h2>Kitaplığını süsle</h2>
+    <label>Hangi rafa?<select id="susle-raf"></select></label>
+    <div id="susle-turler" class="sus-turler"></div>
+    <input type="file" id="susle-resim" accept="image/*" hidden>
+    <p class="kucuk">Çerçeve: resmin ahşap çerçevede durur. Biblo: arka planı şeffaf bir resim (PNG) seçersen rafta heykelcik gibi durur.</p>
+    <label class="onay"><input type="checkbox" id="susle-pencere"> Duvarda pencere (gece ay, yağmurda damla)</label>
+    <h3>Duvar rengi</h3>
+    <div id="susle-duvar" class="renkler"></div>
+    <h3>Ahşap</h3>
+    <div id="susle-ahsap" class="renkler"></div>
+    <div class="dugmeler"><button class="btn birincil">Tamam</button></div>
+  </form>
+</dialog>
+
+<!-- HAKKINDA -->
+<dialog id="hakkinda-dlg">
+  <form method="dialog">
+    <h2>Kitaplığım · Hakkında</h2>
+    <p>Sürüm 3. Kitapların, çizimlerin ve ayarların yalnızca bu tarayıcıda (IndexedDB) durur. Hiçbir şey internete gönderilmez.</p>
+    <h3>Müzik</h3>
+    <p class="atif">"Fresh Air", "Midnight Tale", "Morning" — Kevin MacLeod (incompetech.com)<br>
+    Licensed under Creative Commons: By Attribution 4.0 License<br>
+    http://creativecommons.org/licenses/by/4.0/</p>
+    <h3>Doğa sesleri ve sayfa sesi</h3>
+    <p>Kodla üretildi (Web Audio API); ses dosyası kullanılmadı. Daktilo tuş ve zil sesleri de kodla üretildi. <code>sesler/</code> klasörüne kendi CC0 dosyanı (kus.mp3, yagmur.mp3, somine.mp3, dere.mp3) koyarsan onlar çalar.</p>
+    <h3>Kütüphaneler</h3>
+    <ul>
+      <li>PDF.js — Mozilla — Apache-2.0</li>
+      <li>StPageFlip — Nodlik — MIT</li>
+      <li>Courier Prime yazı tipi — The Courier Prime Project Authors — SIL Open Font License 1.1</li>
+    </ul>
+    <div class="dugmeler"><button class="btn birincil">Tamam</button></div>
+  </form>
+</dialog>
+
+<script src="lib/page-flip.browser.js"></script>
+<script type="module" src="js/uygulama.js"></script>
+</body>
+</html>
