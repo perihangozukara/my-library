@@ -23,7 +23,7 @@
     <button class="btn" id="yeni-raf-btn" aria-label="Yeni raf"><span aria-hidden="true">🗄️</span><span class="yazi">Yeni raf</span></button>
     <button class="btn" id="defterim-btn" aria-label="Defterim"><span aria-hidden="true">📒</span><span class="yazi">Defterim</span></button>
     <button class="btn" id="susle-btn" aria-label="Süsle"><span aria-hidden="true">🎨</span><span class="yazi">Süsle</span></button>
-    <button class="btn ikon" id="hakkinda-btn" title="Hakkında">ⓘ</button>
+    <button class="btn ikon" id="hakkinda-btn" title="Hakkında, depolama ve yedek" aria-label="Hakkında, depolama ve yedek">ⓘ</button>
   </nav>
 </header>
 
@@ -244,14 +244,25 @@
 <!-- HAKKINDA -->
 <dialog id="hakkinda-dlg">
   <form method="dialog">
-    <h2>Kitaplığım · Hakkında</h2>
-    <p>Sürüm 3. Kitapların, çizimlerin ve ayarların yalnızca bu tarayıcıda (IndexedDB) durur. Hiçbir şey internete gönderilmez.</p>
+    <h2>Kitaplığım · Hakkında ve yedek</h2>
+    <h3>Depolama ve yedek</h3>
+    <p class="kucuk" id="depo-bilgi">Ölçülüyor…</p>
+    <p class="kucuk">Kitapların, çizimlerin ve notların yalnız bu cihazın tarayıcısında durur. Başka bir cihaza (tablet, telefon) taşımak için <b>Yedek al</b>, dosyayı o cihaza gönder (Drive, kablo, WhatsApp…) ve orada <b>Yedekten geri yükle</b>. Telefon ve tablette uygulamayı ana ekrana kurarsan tarayıcı verileri silmez.</p>
+    <div class="dugmeler yedek-dugmeler">
+      <button type="button" class="btn" id="yedek-al">⬇ Yedek al</button>
+      <button type="button" class="btn" id="yedek-paylas" hidden>📤 Yedeği paylaş</button>
+      <button type="button" class="btn" id="yedek-yukle">⬆ Yedekten geri yükle</button>
+      <button type="button" class="btn hafif" id="kalici-iste" hidden>🔒 Kalıcı depolamayı aç</button>
+      <input type="file" id="yedek-dosya" accept=".kitapligim,application/octet-stream" hidden>
+    </div>
+    <p class="kucuk" id="yedek-durum" role="status"></p>
+    <p>Sürüm 4. Kitapların, çizimlerin ve ayarların yalnızca bu tarayıcıda (IndexedDB) durur. Hiçbir şey internete gönderilmez.</p>
     <h3>Müzik</h3>
     <p class="atif">"Fresh Air", "Midnight Tale", "Morning" — Kevin MacLeod (incompetech.com)<br>
     Licensed under Creative Commons: By Attribution 4.0 License<br>
     http://creativecommons.org/licenses/by/4.0/</p>
     <h3>Doğa sesleri ve sayfa sesi</h3>
-    <p>Kodla üretildi (Web Audio API); ses dosyası kullanılmadı. Daktilo tuş ve zil sesleri de kodla üretildi. <code>sesler/</code> klasörüne kendi CC0 dosyanı (kus.mp3, yagmur.mp3, somine.mp3, dere.mp3) koyarsan onlar çalar.</p>
+    <p>Yağmur: "Rain against the window" (cori), şömine: "Dry grass burning in open fireplace" (ezwa), sayfa çevirme: "Turning a page" (planish) — Wikimedia Commons, kamu malı (public domain). Kuş, dere ve daktilo sesleri kodla üretildi (Web Audio API). <code>sesler/</code> klasörüne kendi CC0 dosyanı (kus.mp3, yagmur.mp3, somine.mp3, dere.mp3) koyarsan onlar çalar.</p>
     <h3>Kütüphaneler</h3>
     <ul>
       <li>PDF.js — Mozilla — Apache-2.0</li>

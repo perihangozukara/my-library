@@ -750,6 +750,11 @@ body.karanlik-oda.okuyor .kitap-govde .yigin { opacity: .18; }
 body.karanlik-oda.okuyor .sayfa-alt { opacity: .25; }
 body.karanlik-oda.okuyor #ses-panel { opacity: .95; }
 
+/* ---------- 9. sürüm: yedek ---------- */
+.yedek-dugmeler { justify-content: flex-start; }
+#yedek-durum:empty { display: none; }
+#yedek-durum { background: var(--panel2); padding: 8px 10px; border-radius: 8px; }
+
 /* ---------- Telefon ---------- */
 @media (max-width: 640px) {
   :root { --raf-sira: 186px; }

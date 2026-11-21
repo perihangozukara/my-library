@@ -359,13 +359,13 @@ function dosyaTamponu(ad) {
 }
 const dosyaVar = {}; // ad -> bool (sesler/<ad>.mp3 var mı)
 
+// sesler/liste.json: klasördeki gerçek kayıtların listesi. (HEAD isteği internetsiz çalışmadığı için liste kullanılır.)
 export async function dosyalariYokla() {
-  await Promise.all([...DOGA, { ad: 'sayfa' }].map(async d => {
-    try {
-      const r = await fetch(`sesler/${d.ad}.mp3`, { method: 'HEAD' });
-      dosyaVar[d.ad] = r.ok;
-    } catch (_) { dosyaVar[d.ad] = false; }
-  }));
+  try {
+    const y = await fetch('sesler/liste.json');
+    const l = y.ok ? (await y.json()).dosyalar || [] : [];
+    for (const ad of [...DOGA.map(d => d.ad), 'sayfa']) dosyaVar[ad] = l.includes(ad);
+  } catch (_) { /* liste yoksa kodla üretilen sesler çalar */ }
 }
 
 export function dogaKaynagi(ad) { return dosyaVar[ad] ? 'dosya' : 'kod'; }

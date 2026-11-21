@@ -7,6 +7,7 @@ import { okuyucuAc, okuyucuKapat, okuyucuKitabi, yakinlastir, cizimPaneliAc, ciz
 import * as ses from './ses.js';
 import { susElemani, isiklarElemani, susPaneliKur, susMenuAc, renkleriUygula, SUS_TURLERI } from './susleme.js';
 import { daktiloAc, daktiloKur } from './daktilo.js';
+import { yedekOlustur, yedekYukle, yedekDosyaAdi, depoBilgisi, kaliciIste } from './yedek.js';
 
 const $ = (s, k = document) => k.querySelector(s);
 const $$ = (s, k = document) => [...k.querySelectorAll(s)];
@@ -248,6 +249,54 @@ async function kitapKaldir(kitap) {
   await db.cokluSil([['kitaplar', kitap.id], ['dosyalar', kitap.id], ['notlar', kitap.id], ...cizimler.map(c => ['cizimler', c.id])]);
   try { localStorage.removeItem('kitapligim-dk-' + kitap.id); } catch (_) {}
   kitaplar = kitaplar.filter(k => k.id !== kitap.id);
+}
+
+// ---------- Depolama ve yedek ----------
+const mb = b => (b == null ? '?' : b < 1048576 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1048576).toFixed(b < 104857600 ? 1 : 0)} MB`);
+async function depoGoster() {
+  const d = await depoBilgisi();
+  const kalici = d.kalici === true ? 'açık (tarayıcı kendiliğinden silmez)' : d.kalici === false ? 'kapalı (yer daralırsa tarayıcı silebilir)' : 'bilinmiyor';
+  $('#depo-bilgi').textContent = `Kullanılan yer: ${mb(d.kullanilan)}${d.kota ? ` / ${mb(d.kota)}` : ''} · ${kitaplar.length} kitap · Kalıcı depolama: ${kalici}`;
+  $('#kalici-iste').hidden = d.kalici !== false;
+}
+function yedekKur() {
+  let sonYedek = null;
+  const durum = m => { $('#yedek-durum').textContent = m; };
+  $('#yedek-al').onclick = async () => {
+    durum('Yedek hazırlanıyor…');
+    try {
+      const { blob, sayilar } = await yedekOlustur();
+      const ad = yedekDosyaAdi();
+      sonYedek = new File([blob], ad, { type: 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = ad; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      durum(`Yedek indirildi: ${ad} (${mb(blob.size)} · ${sayilar.kitap} kitap, ${sayilar.cizim} çizim, ${sayilar.not} not). Bu dosyayı öbür cihaza gönder.`);
+      $('#yedek-paylas').hidden = !(navigator.canShare && navigator.canShare({ files: [sonYedek] }));
+    } catch (h) { console.warn(h); durum('Yedek alınamadı: ' + (h.message || h)); }
+  };
+  $('#yedek-paylas').onclick = async () => {
+    if (!sonYedek) return;
+    try { await navigator.share({ files: [sonYedek], title: 'Kitaplığım yedeği' }); } catch (_) {}
+  };
+  $('#yedek-yukle').onclick = () => $('#yedek-dosya').click();
+  $('#yedek-dosya').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    durum('Yedek yükleniyor…');
+    try {
+      const s = await yedekYukle(f, (b, t) => durum(`Yükleniyor… ${Math.round(b / t * 100)}%`));
+      await yukle(); ciz(); pencereUygula();
+      durum(`Geri yüklendi: ${s.kitap} kitap, ${s.raf} raf, ${s.cizim} çizim, ${s.not} not, ${s.sus} süs.`);
+      bildir('Yedek geri yüklendi.');
+      depoGoster();
+    } catch (h) {
+      console.warn(h);
+      const dolu = h && (h.name === 'QuotaExceededError' || /quota/i.test(h.message || ''));
+      durum(dolu ? 'Bu cihazda yer kalmadı; yedeğin bir kısmı yüklenemedi.' : 'Yüklenemedi: ' + (h.message || h));
+    }
+  };
+  $('#kalici-iste').onclick = async () => { await kaliciIste(); depoGoster(); };
 }
 
 // ---------- Sürükle-bırak (fare ve dokunma) ----------
@@ -762,7 +811,8 @@ function arayuzKur() {
     const l = e.target.closest('.raf-levha');
     if (l) rafPenceresi(raflar.find(r => r.id === l.dataset.raf));
   });
-  $('#hakkinda-btn').onclick = () => $('#hakkinda-dlg').showModal();
+  $('#hakkinda-btn').onclick = () => { $('#hakkinda-dlg').showModal(); depoGoster(); };
+  yedekKur();
 
   // PDF'i pencereye sürükleyip bırakmak
   let derinlik = 0;

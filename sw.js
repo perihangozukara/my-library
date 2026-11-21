@@ -1,8 +1,8 @@
 ﻿// KitaplÄ±ÄŸÄ±m Â· service worker: uygulamayÄ± internetsiz aÃ§ar. DÄ±ÅŸarÄ±ya istek gÃ¶ndermez.
-const SURUM = 'kitapligim-v10';
+const SURUM = 'kitapligim-v11';
 const KABUK = [
   './', 'index.html', 'manifest.webmanifest', 'css/stil.css',
-  'js/uygulama.js', 'js/db.js', 'js/pdf.js', 'js/okuyucu.js', 'js/oneri.js', 'js/ses.js', 'js/susleme.js', 'js/daktilo.js',
+  'js/uygulama.js', 'js/db.js', 'js/pdf.js', 'js/okuyucu.js', 'js/oneri.js', 'js/ses.js', 'js/susleme.js', 'js/daktilo.js', 'js/yedek.js', 'sesler/liste.json',
   'lib/pdf.min.mjs', 'lib/pdf.worker.min.mjs', 'lib/page-flip.browser.js',
   'ikonlar/ikon.svg', 'ikonlar/ikon-192.png', 'ikonlar/ikon-512.png',
   'fontlar/courier-prime-400-italic-latin-ext.woff2', 'fontlar/courier-prime-400-italic-latin.woff2', 'fontlar/courier-prime-400-normal-latin-ext.woff2', 'fontlar/courier-prime-400-normal-latin.woff2', 'fontlar/courier-prime-700-normal-latin-ext.woff2', 'fontlar/courier-prime-700-normal-latin.woff2', 'fontlar/courier-prime.css',
@@ -29,7 +29,7 @@ self.addEventListener('fetch', e => {
     const onbellek = await caches.open(SURUM);
     const var_ = await onbellek.match(anahtar, { ignoreSearch: true });
     // Kabuk dosyalarÄ±: Ã¶nce aÄŸ (gÃ¼ncel kalsÄ±n), olmazsa Ã¶nbellek. DiÄŸerleri: Ã¶nce Ã¶nbellek.
-    const kabukMu = /\.(html|js|mjs|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/');
+    const kabukMu = /\.(html|js|mjs|css|webmanifest|json)$/.test(url.pathname) || url.pathname.endsWith('/');
     if (var_ && !kabukMu) return var_;
     try {
       const yanit = await fetch(anahtar);
