@@ -226,6 +226,26 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .sayfa-ic canvas { display: block; width: 100%; height: 100%; object-fit: contain; filter: var(--sayfa-filtre); }
 .sayfa-ic::after { content: ""; position: absolute; inset: 0; background: var(--sayfa-carp); mix-blend-mode: multiply; pointer-events: none; }
 .vurgu-katman { position: absolute; inset: 0; pointer-events: none; }
+/* Görünmez, seçilebilir metin (PDF.js TextLayer): fareyle cümle seçip kopyalamak için */
+.metin-katman {
+  position: absolute; z-index: 2; overflow: clip; line-height: 1; text-align: initial;
+  left: var(--yer-sol, 0) !important; top: var(--yer-ust, 0) !important;
+  width: var(--yer-gen, 100%) !important; height: var(--yer-yuk, 100%) !important;
+  text-size-adjust: none; -webkit-text-size-adjust: none; forced-color-adjust: none;
+  user-select: text; -webkit-user-select: text;
+  --total-scale-factor: 1; --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.metin-katman :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+.metin-katman > :not(.markedContent), .metin-katman .markedContent span:not(.markedContent) {
+  z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1; --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.metin-katman span.markedContent { top: 0; height: 0; }
+.metin-katman ::selection { background: rgba(40, 110, 230, .3); }
+.metin-katman br::selection { background: transparent; }
 .vurgu { position: absolute; border-radius: 2px; mix-blend-mode: var(--vurgu-karisim); opacity: var(--vurgu-opak); }
 .vurgu.onizleme { opacity: calc(var(--vurgu-opak) * .8); }
 .sayfa-alt { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--soluk); opacity: .6; pointer-events: none; }
@@ -702,6 +722,17 @@ body[data-tema="sepya"] .kitap-govde .yigin { background: repeating-linear-gradi
 /* Kaldığın paragraf işareti */
 .yer-imi-btn { font-size: 15px; }
 .kalem-btn.yerimi-btn.secili { background: #f0d48a; }
+.kalem-btn.cevir-btn.secili { background: #a9cdf5; }
+/* Çevir kalemi: seçilen cümle ve Türkçesi */
+#ceviri-kutu {
+  position: fixed; z-index: 70; width: min(380px, calc(100vw - 16px)); max-height: 50vh; overflow: auto;
+  background: var(--panel); color: var(--metin); border: 1px solid var(--cizgi); border-radius: 12px; padding: 10px 12px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.35); font-size: .95rem; line-height: 1.45;
+}
+#ceviri-kutu .kaynak { margin: 0 0 6px; font-size: .85rem; opacity: .7; }
+#ceviri-kutu .hedef { margin: 0 0 8px; font-size: 1.02rem; }
+#ceviri-kutu .alt { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+#ceviri-kutu button, #ceviri-kutu a { border: 1px solid var(--cizgi); background: var(--panel2); color: inherit; border-radius: 999px; padding: .2em .8em; cursor: pointer; text-decoration: none; font: inherit; font-size: .85rem; min-height: 32px; display: inline-flex; align-items: center; }
 .yer-imi-bant { position: absolute; border-radius: 3px; background: rgba(240,180,80,.22); mix-blend-mode: var(--vurgu-karisim); pointer-events: none; }
 body[data-tema="gece"] .yer-imi-bant { background: rgba(240,180,80,.18); }
 .yer-imi-isaret {

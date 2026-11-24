@@ -36,7 +36,15 @@ async function basla() {
   if (!raflar.length) kurulumAc();
   else ciz();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('sw.js').catch(h => console.warn('[Kitaplığım] service worker', h));
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(h => console.warn('[Kitaplığım] service worker', h));
+    // Yeni sürüm devreye girince sayfa bir kez yenilenir; yoksa eski kod açık kalırdı.
+    const oncekiVardi = !!navigator.serviceWorker.controller;
+    let yenilendi = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!oncekiVardi || yenilendi) return;
+      yenilendi = true;
+      location.reload();
+    });
   }
 }
 

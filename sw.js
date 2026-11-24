@@ -1,5 +1,5 @@
 ﻿// KitaplÄ±ÄŸÄ±m Â· service worker: uygulamayÄ± internetsiz aÃ§ar. DÄ±ÅŸarÄ±ya istek gÃ¶ndermez.
-const SURUM = 'kitapligim-v15';
+const SURUM = 'kitapligim-v20';
 const KABUK = [
   './', 'index.html', 'manifest.webmanifest', 'css/stil.css',
   'js/uygulama.js', 'js/db.js', 'js/pdf.js', 'js/okuyucu.js', 'js/oneri.js', 'js/ses.js', 'js/susleme.js', 'js/daktilo.js', 'js/yedek.js', 'sesler/liste.json',
@@ -11,7 +11,8 @@ const KABUK = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SURUM).then(c => c.addAll(KABUK)).then(() => self.skipWaiting()));
+  // cache: 'reload' → tarayıcının HTTP önbelleğindeki eski kopya değil, sunucudaki güncel dosya alınır
+  e.waitUntil(caches.open(SURUM).then(c => c.addAll(KABUK.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -32,7 +33,7 @@ self.addEventListener('fetch', e => {
     const kabukMu = /\.(html|js|mjs|css|webmanifest|json)$/.test(url.pathname) || url.pathname.endsWith('/');
     if (var_ && !kabukMu) return var_;
     try {
-      const yanit = await fetch(anahtar);
+      const yanit = await fetch(anahtar, { cache: 'no-cache' }); // sunucuya sor, eski kopyayı kullanma
       if (yanit.ok && yanit.status === 200) onbellek.put(anahtar, yanit.clone());
       return yanit;
     } catch (h) {

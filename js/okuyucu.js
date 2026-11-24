@@ -1,7 +1,7 @@
 // Kitaplığım · okuyucu: PDF.js ile sayfa çizimi, StPageFlip (MIT) ile sayfa çevirme,
 // renkli kalemle cümle çizme.
 import { db, yeniId } from './db.js';
-import { pdfAc, sayfaCiz, sayfaMetni } from './pdf.js';
+import { pdfAc, sayfaCiz, sayfaMetni, metinKatmaniCiz } from './pdf.js';
 import { sayfaSesi } from './ses.js';
 
 export const KALEMLER = [
@@ -80,7 +80,7 @@ export async function okuyucuAc(kitap, baslangic, sec = {}) {
     s.dataset.no = i;
     if (i === 1 || i === N) s.dataset.density = 'hard';
     s.classList.add(i % 2 === 0 ? 'sol-sayfa' : 'sag-sayfa'); // kapak tek başına sağda: çift sayfalar solda
-    s.innerHTML = `<div class="sayfa-ic"></div><div class="sayfa-bombe"></div><div class="vurgu-katman"></div><div class="sayfa-alt">${i}</div>`;
+    s.innerHTML = `<div class="sayfa-ic"></div><div class="sayfa-bombe"></div><div class="vurgu-katman"></div><div class="metin-katman textLayer"></div><div class="sayfa-alt">${i}</div>`;
     sayfalar.push(s);
     kitapEl.appendChild(s);
   }
@@ -389,6 +389,7 @@ function gorunurleriCiz() {
     if (Math.abs(n - i) > 8) {
       const ic = durum.sayfalar[n - 1].querySelector('.sayfa-ic');
       ic.innerHTML = '';
+      durum.sayfalar[n - 1].querySelector('.metin-katman').innerHTML = '';
       durum.cizilen.delete(n);
     }
   }
@@ -406,6 +407,7 @@ function gorunurleriCiz() {
         katmanOturt(durum.sayfalar[n - 1], canvas.width / canvas.height, durum.kitap.oran || 1.414);
         vurgulariGoster(n);
         metinAl(n); // kalem için metni önceden hazırla
+        metinKatmaniKur(durum, n);
       } catch (h) { console.warn('[Kitaplığım] sayfa çizilemedi', n, h); durum.cizilen.delete(n); }
     });
   }
@@ -416,14 +418,41 @@ function gorunurleriCiz() {
 function katmanOturt(sayfaEl, resimOrani, kitapOrani) {
   const kutuOrani = 1 / kitapOrani; // genişlik / yükseklik
   const k = sayfaEl.querySelector('.vurgu-katman');
-  if (Math.abs(resimOrani - kutuOrani) < 0.01) { k.style.cssText = ''; return; }
-  if (resimOrani > kutuOrani) {
+  // Metin katmanının satır içi stiline PDF.js de yazar; konumu CSS değişkenleriyle verilir.
+  const mk = sayfaEl.querySelector('.metin-katman');
+  const yer = (sol, ust, gen, yuk) => {
+    k.style.cssText = `left:${sol}%;top:${ust}%;width:${gen}%;height:${yuk}%`;
+    mk.style.setProperty('--yer-sol', sol + '%'); mk.style.setProperty('--yer-ust', ust + '%');
+    mk.style.setProperty('--yer-gen', gen + '%'); mk.style.setProperty('--yer-yuk', yuk + '%');
+  };
+  if (Math.abs(resimOrani - kutuOrani) < 0.01) yer(0, 0, 100, 100);
+  else if (resimOrani > kutuOrani) {
     const h = kutuOrani / resimOrani * 100;
-    k.style.cssText = `left:0;width:100%;top:${(100 - h) / 2}%;height:${h}%`;
+    yer(0, (100 - h) / 2, 100, h);
   } else {
     const w = resimOrani / kutuOrani * 100;
-    k.style.cssText = `top:0;height:100%;left:${(100 - w) / 2}%;width:${w}%`;
+    yer((100 - w) / 2, 0, w, 100);
   }
+}
+
+// Görünmez, seçilebilir metin katmanı: fareyle cümle seçip kopyalamak için (Seç-Çevir).
+// Sayfa büyüyüp küçülünce yazı boyutu da uysun diye katmanın genişliği izlenir.
+const katmanOlcer = typeof ResizeObserver !== 'undefined'
+  ? new ResizeObserver(girdiler => { for (const g of girdiler) metinOlcekle(g.target); })
+  : null;
+function metinOlcekle(mk) {
+  const pdfGen = +mk.dataset.pdfGen;
+  if (pdfGen && mk.offsetWidth) mk.style.setProperty('--total-scale-factor', mk.offsetWidth / pdfGen);
+}
+async function metinKatmaniKur(durum, n) {
+  const mk = durum.sayfalar[n - 1].querySelector('.metin-katman');
+  if (mk.childElementCount) return; // zaten var (yalnız resmin çözünürlüğü değişti)
+  try {
+    await metinKatmaniCiz(durum.pdf, n, mk);
+    if (d !== durum) return;
+    metinOlcekle(mk);
+    if (katmanOlcer) katmanOlcer.observe(mk);
+  } catch (h) { mk.innerHTML = ''; }
 }
 
 function metinAl(n) {
@@ -451,7 +480,7 @@ function vurguDiv(r, renk, onizleme = false) {
   return v;
 }
 
-function renkKodu(ad) { return (KALEMLER.find(k => k.ad === ad) || KALEMLER[0]).renk; }
+function renkKodu(ad) { return ad === 'cevir' ? '#a9cdf5' : (KALEMLER.find(k => k.ad === ad) || KALEMLER[0]).renk; }
 
 // ---------- Kalem ----------
 // StPageFlip fare hareketini ve bırakmayı bütün pencereden dinler; kalem açıkken
@@ -471,6 +500,19 @@ function engelAyarla(acik) {
   engelKurulu = acik;
 }
 
+// Fareyle metnin üstünden sürüklemeye başlanınca bu sürükleme metin seçimidir.
+// StPageFlip görürse köşeyi kıvırıp sayfayı çevirir; bırakana kadar olaylar ona ulaşmaz.
+// (stopPropagation tarayıcının kendi seçimini engellemez.)
+let fareSecim = false;
+window.addEventListener('mousedown', e => {
+  if (!d || d.kalem || e.button !== 0) return;
+  if (!e.target.closest || !e.target.closest('.metin-katman span')) return;
+  fareSecim = true;
+  e.stopPropagation();
+}, true);
+window.addEventListener('mousemove', e => { if (fareSecim) e.stopPropagation(); }, true);
+window.addEventListener('mouseup', e => { if (fareSecim) { fareSecim = false; e.stopPropagation(); } }, true);
+
 export function kalemSec(ad) {
   if (!d) return;
   d.kalem = ad;
@@ -479,6 +521,21 @@ export function kalemSec(ad) {
   katman.hidden = !ad;
   document.querySelectorAll('.kalem-btn').forEach(b => b.classList.toggle('secili', b.dataset.kalem === (ad || '')));
 }
+
+// Sayfalar resim (canvas) olarak çizildiği için tarayıcıda seçili metin yoktur; Ctrl+C boş
+// kalırdı. Kalemle çizilen son metin, çizimden sonraki 10 saniye içinde Ctrl+C ile
+// kopyalanır. Böylece Seç-Çevir gibi Ctrl+C ile okuyan araçlar da cümleyi alır.
+// Sayfada gerçek bir seçim ya da bir yazı kutusunda imleç varsa ona dokunulmaz.
+let sonKalemMetni = null;
+document.addEventListener('copy', e => {
+  const s = sonKalemMetni;
+  if (!s || Date.now() - s.zaman > 10000) return;
+  const odak = document.activeElement;
+  if (odak && (odak.isContentEditable || /^(INPUT|TEXTAREA)$/.test(odak.tagName))) return;
+  if (String(window.getSelection() || '').trim()) return;
+  e.clipboardData.setData('text/plain', s.metin);
+  e.preventDefault();
+});
 
 export function kalemKur() {
   const katman = $('#ok-kalem-katman');
@@ -618,8 +675,14 @@ export function kalemKur() {
     katmanEl.querySelectorAll('.onizleme').forEach(x => x.remove());
     if (!c.parcalar) return;
     let secim = secimHesapla(c.parcalar, c.bas, c.son);
+    if (secim && secim.metin) sonKalemMetni = { metin: secim.metin, zaman: Date.now() };
     if (!secim && c.parcalar.length) {
       ipucu('Burada metin yok. Kalemi satırın üstünden geçir.');
+      return;
+    }
+    if (d.kalem === 'cevir') {
+      if (!secim || !secim.metin) { taramaIpucu(e.clientX, e.clientY); return; }
+      ceviriGoster(secim.metin, e.clientX, e.clientY);
       return;
     }
     if (!secim) {
@@ -709,6 +772,96 @@ function secimHesapla(p, bas, son) {
     oncekiSatir = m.satir;
   }
   return { metin: metin.replace(/\s+/g, ' ').trim(), rects: [...satirlar.values()] };
+}
+
+// ---------- Çevir kalemi ----------
+// Çeviri Chrome'un kendi çevirmeniyle (Translator API) bilgisayarda yapılır; metin dışarı gitmez.
+// İlk kullanımda Chrome dil paketini bir kez indirir. Çevirmen yoksa metin panoya kopyalanır
+// (Seç-Çevir oradan okuyabilir) ve istenirse Google Çeviri'de açılır.
+let cevirmen = null;
+async function cevirmenAl() {
+  if (cevirmen) return cevirmen;
+  if (!('Translator' in self)) return null;
+  const dil = { sourceLanguage: 'en', targetLanguage: 'tr' };
+  const durum = await Translator.availability(dil);
+  if (durum === 'unavailable') return null;
+  cevirmen = Translator.create({
+    ...dil,
+    monitor(m) {
+      m.addEventListener('downloadprogress', e => {
+        const k = $('#ceviri-kutu .hedef');
+        if (k && e.loaded < 1) k.textContent = `Chrome çeviri paketini indiriyor (yalnız ilk seferde): %${Math.round(e.loaded * 100)}`;
+      });
+    },
+  }).catch(h => { cevirmen = null; throw h; });
+  return cevirmen;
+}
+const kacir = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Taranmış sayfa: PDF'te metin yok, yalnız resim var. Metni ekrandan Seç-Çevir okur.
+// Çevir kalemi açıkken sürüklemek sayfayı çevirmez; Seç-Çevir'in alanı rahatça çizilir.
+function taramaIpucu(x, y) {
+  const kutu = $('#ceviri-kutu');
+  const gen = Math.min(380, window.innerWidth - 16);
+  kutu.style.left = Math.max(8, Math.min(window.innerWidth - gen - 8, x - gen / 2)) + 'px';
+  kutu.style.top = Math.max(8, Math.min(window.innerHeight - 200, y + 16)) + 'px';
+  kutu.innerHTML = `<p class="hedef"><b>Bu sayfa taranmış:</b> PDF'te yazı yok, sayfa bir resim. Bu yüzden Kitaplığım cümleyi okuyamıyor.</p>
+    <p class="kaynak">Seç-Çevir ile çevir: <b>Ctrl+Alt+O</b>'ya bas, sonra cümlenin çevresine fareyle bir dikdörtgen çiz. Seç-Çevir ekrandaki yazıyı okuyup çevirir.</p>
+    <div class="alt"><button data-k="kapat">Tamam</button></div>`;
+  kutu.hidden = false;
+  const kapat = () => { kutu.hidden = true; document.removeEventListener('pointerdown', ceviriGoster.disari, true); };
+  document.removeEventListener('pointerdown', ceviriGoster.disari, true);
+  ceviriGoster.disari = ev => { if (!kutu.contains(ev.target)) kapat(); };
+  setTimeout(() => document.addEventListener('pointerdown', ceviriGoster.disari, true), 0);
+  kutu.onclick = ev => { if (ev.target.closest('button')) kapat(); };
+}
+
+async function ceviriGoster(metin, x, y) {
+  const kutu = $('#ceviri-kutu');
+  const gen = Math.min(380, window.innerWidth - 16);
+  kutu.style.left = Math.max(8, Math.min(window.innerWidth - gen - 8, x - gen / 2)) + 'px';
+  kutu.style.top = Math.max(8, Math.min(window.innerHeight - 220, y + 16)) + 'px';
+  const google = 'https://translate.google.com/?sl=en&tl=tr&op=translate&text=' + encodeURIComponent(metin);
+  const ciz = hedef => {
+    kutu.innerHTML = `<p class="kaynak">${kacir(metin)}</p><p class="hedef">${hedef}</p>
+      <div class="alt"><button data-k="kopyala">İngilizcesini kopyala</button><a href="${google}" target="_blank" rel="noopener">Google Çeviri</a><button data-k="kapat">Kapat</button></div>`;
+  };
+  ciz('Çevriliyor…');
+  kutu.hidden = false;
+  const kapat = () => { kutu.hidden = true; document.removeEventListener('pointerdown', disari, true); };
+  const disari = ev => { if (!kutu.contains(ev.target)) kapat(); };
+  document.removeEventListener('pointerdown', ceviriGoster.disari, true);
+  ceviriGoster.disari = disari;
+  setTimeout(() => document.addEventListener('pointerdown', disari, true), 0);
+  kutu.onclick = async ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.k === 'kapat') kapat();
+    if (b.dataset.k === 'kopyala') { try { await navigator.clipboard.writeText(metin); ipucu('Kopyalandı.'); } catch (_) { ipucu('Kopyalanamadı.'); } }
+  };
+  // Hâlâ bu cümle mi gösteriliyor? (bu arada yeni bir cümle seçilmiş ya da kutu kapanmış olabilir)
+  const gecerli = () => !kutu.hidden && $('#ceviri-kutu .kaynak')?.textContent === metin;
+  const yaz = t => { const k = $('#ceviri-kutu .hedef'); if (gecerli() && k) k.textContent = t; };
+  // Uzun sürerse (Chrome dil paketini hazırlıyor) kutuda bunu yaz; çok uzarsa başka yolları göster
+  const uyari1 = setTimeout(() => yaz('Chrome çeviri paketini hazırlıyor (yalnız ilk seferde biraz sürer)…'), 4000);
+  const uyari2 = setTimeout(() => {
+    navigator.clipboard.writeText(metin).catch(() => {});
+    yaz('Chrome çevirmeni hâlâ hazırlanıyor. İngilizcesi panoya kopyalandı; şimdilik Seç-Çevir ya da Google Çeviri ile çevirebilirsin. Hazır olunca çeviri buraya gelir.');
+  }, 20000);
+  try {
+    const c = await cevirmenAl();
+    if (!c) {
+      try { await navigator.clipboard.writeText(metin); } catch (_) {}
+      yaz('Bu tarayıcıda yerleşik çevirmen yok. İngilizcesi panoya kopyalandı; Seç-Çevir ya da Google Çeviri ile çevirebilirsin.');
+      return;
+    }
+    const sonuc = await c.translate(metin);
+    yaz(sonuc);
+  } catch (h) {
+    console.warn('[Kitaplığım] çeviri', h);
+    yaz('Çevrilemedi. Birazdan tekrar dene ya da Google Çeviri düğmesini kullan.');
+  } finally {
+    clearTimeout(uyari1); clearTimeout(uyari2);
+  }
 }
 
 function etiketSor(kayit, x, y) {

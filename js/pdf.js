@@ -30,6 +30,18 @@ export async function sayfaCiz(pdf, no, genislik, canvas) {
   return { canvas, gorev };
 }
 
+// Seçilebilir, görünmez metin katmanı (PDF.js TextLayer). Canvas resim olduğu için
+// fareyle seçilen metin bu katmandan gelir; Seç-Çevir gibi araçlar onu okur.
+// Yazı boyutu `--total-scale-factor` ile ölçeklenir (katman genişliği / PDF genişliği).
+export async function metinKatmaniCiz(pdf, no, kap) {
+  const sayfa = await pdf.getPage(no);
+  const viewport = sayfa.getViewport({ scale: 1 });
+  kap.dataset.pdfGen = viewport.width;
+  const katman = new pdfjsLib.TextLayer({ textContentSource: sayfa.streamTextContent(), container: kap, viewport });
+  await katman.render();
+  return katman;
+}
+
 // Sayfadaki metin parçaları, sayfaya göre 0..1 oranlarıyla.
 export async function sayfaMetni(pdf, no) {
   const sayfa = await pdf.getPage(no);
